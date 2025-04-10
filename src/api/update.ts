@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express'
+import express from 'express'
 import logger from '../utils/logger'
 import { parseGitlabWebhook } from '../providers/gitlab'
 import { parseGithubWebhook } from '../providers/github'
@@ -6,7 +6,7 @@ import { StackManager } from '../core/StackManager'
 
 const router = express.Router()
 
-router.post('/update', async (req: Request, res: Response) => {
+router.post('/update', async (req: any, res: any) => {
   const projectKey = req.query.key as string
   const headers = req.headers
 

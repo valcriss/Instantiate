@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "migrate": "node-pg-migrate --envPath .env --migrations-dir ./migrations"
   },
   "keywords": [],
   "author": "",
@@ -14,17 +15,27 @@
   "description": "",
   "devDependencies": {
     "@types/express": "^5.0.1",
+    "@types/jest": "^29.5.14",
+    "@types/mustache": "^4.2.5",
     "@types/node": "^22.14.0",
     "@types/pg": "^8.11.11",
+    "@types/yaml": "^1.9.6",
+    "jest": "^29.7.0",
+    "node-pg-migrate": "^7.9.1",
     "pino-pretty": "^13.0.0",
+    "ts-jest": "^29.3.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
+    "execa": "^9.5.2",
     "express": "^5.1.0",
+    "mustache": "^4.2.0",
     "pg": "^8.14.1",
     "pino": "^9.6.0",
+    "simple-git": "^3.27.0",
+    "yaml": "^2.7.1",
     "yamljs": "^0.3.0"
   }
 }
