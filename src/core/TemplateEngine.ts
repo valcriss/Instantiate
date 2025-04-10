@@ -10,19 +10,15 @@ export class TemplateEngine {
    * @param outputPath Chemin où écrire le résultat final
    * @param context Dictionnaire des variables à injecter
    */
-  static async renderToFile(
-    inputPath: string,
-    outputPath: string,
-    context: Record<string, unknown>
-  ): Promise<void> {
+  static async renderToFile(inputPath: string, outputPath: string, context: Record<string, unknown>): Promise<void> {
     try {
       const template = await fs.readFile(inputPath, 'utf-8')
       const result = mustache.render(template, context)
       await fs.mkdir(path.dirname(outputPath), { recursive: true })
       await fs.writeFile(outputPath, result, 'utf-8')
-      logger.info(`Template rendu dans ${outputPath}`)
+      logger.info(`[template] Template rendered in ${outputPath}`)
     } catch (err) {
-      logger.error({ err }, `Erreur lors du rendu du template ${inputPath}`)
+      logger.error(`[template] Error while rendering the template ${inputPath}`)
       throw err
     }
   }

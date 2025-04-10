@@ -38,8 +38,7 @@ describe('TemplateEngine', () => {
     ).rejects.toThrow()
 
     expect(logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ err: expect.any(Error) }),
-      expect.stringContaining('Erreur lors du rendu du template /input/missing.yml')
+      expect.stringContaining('[template] Error while rendering the template /input/missing.yml')
     )
   })
 })

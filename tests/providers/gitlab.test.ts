@@ -14,7 +14,7 @@ describe('parseGitlabWebhook', () => {
         author_id: 99
       },
       project: {
-        path_with_namespace: 'valcriss/instantiate-gl'
+        git_http_url: 'valcriss/instantiate-gl'
       },
       user: {
         username: 'valcriss'
@@ -45,7 +45,7 @@ describe('parseGitlabWebhook', () => {
         author_id: 1
       },
       project: {
-        path_with_namespace: 'group/project'
+        git_http_url: 'group/project'
       },
       user: {
         username: 'botuser'

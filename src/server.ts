@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 import logger from './utils/logger'
 import updateRoute from './api/update'
 
-logger.info('Server is starting...')
+logger.info('[server] Server is starting...')
 
 dotenv.config()
 
@@ -17,5 +17,5 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`)
+  logger.info(`[server] Server running on port ${PORT}`)
 })

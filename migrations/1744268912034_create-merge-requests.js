@@ -22,6 +22,7 @@ exports.up = (pgm) => {
         id: 'id',
         mr_id: { type: 'integer', notNull: true, references: '"merge_requests"', onDelete: 'cascade' },
         service: { type: 'text', notNull: true },
+        name: { type: 'text', notNull: true },
         internal_port: { type: 'integer', notNull: true },
         external_port: { type: 'integer', notNull: true, unique: true }
     })
@@ -32,7 +33,7 @@ exports.up = (pgm) => {
  * @param run {() => void | undefined}
  * @returns {Promise<void> | void}
  */
-exports.down = (pgm) => { 
+exports.down = (pgm) => {
     pgm.dropTable('exposed_ports')
     pgm.dropTable('merge_requests')
 };

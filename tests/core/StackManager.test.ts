@@ -7,6 +7,11 @@ import { DockerService } from '../../src/docker/DockerService'
 import db from '../../src/db'
 import { PortAllocator } from '../../src/core/PortAllocator'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
+import { name } from 'mustache'
+import { PathLike, Stats } from 'fs'
+import path from 'path'
+import os from 'os'
+import logger from '../../src/utils/logger'
 
 jest.mock('simple-git')
 jest.mock('fs/promises')
@@ -51,8 +56,8 @@ describe('StackManager.deploy', () => {
     mockFs.readFile.mockResolvedValueOnce('fake-yaml-content')
     mockYaml.parse.mockReturnValue({
       expose_ports: [
-        { service: 'web', port: 3000 },
-        { service: 'api', port: 8000 }
+        { service: 'web', name:'WEB_PORT', port: 3000 },
+        { service: 'api', name:'API_PORT', port: 8000 }
       ]
     })
 
@@ -64,7 +69,9 @@ describe('StackManager.deploy', () => {
     // Mock template + docker
     mockTemplateEngine.renderToFile.mockResolvedValue()
     mockDocker.up.mockResolvedValue()
-
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+        return {} as Stats; // Simulate file exists
+    })
     // Mock DB
     mockDb.query.mockResolvedValue({ rows: [], command: '', rowCount: 0, oid: 0, fields: [] })
 
@@ -74,8 +81,8 @@ describe('StackManager.deploy', () => {
     // ✅ Assertions clés
     expect(fakeGit.clone).toHaveBeenCalled()
     expect(mockFs.readFile).toHaveBeenCalled()
-    expect(mockPorts.allocatePort).toHaveBeenCalledWith('mr-42', 'web', 3000)
-    expect(mockPorts.allocatePort).toHaveBeenCalledWith('mr-42', 'api', 8000)
+    expect(mockPorts.allocatePort).toHaveBeenCalledWith('mr-42', 'web', 'WEB_PORT', 3000)
+    expect(mockPorts.allocatePort).toHaveBeenCalledWith('mr-42', 'api', 'API_PORT', 8000)
 
     expect(mockTemplateEngine.renderToFile).toHaveBeenCalledWith(
       expect.stringContaining('docker-compose.yml'),
@@ -97,21 +104,21 @@ describe('StackManager.deploy', () => {
 
   it('log et relance une erreur si une étape échoue (ex: substitution template)', async () => {
     const stackManager = new StackManager()
-  
+
     // Mock tout comme avant
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
     mockGit.mockReturnValue(fakeGit as any)
-  
+
     mockFs.readFile.mockResolvedValueOnce('yaml')
     mockYaml.parse.mockReturnValue({
-      expose_ports: [{ service: 'web', port: 3000 }]
+      expose_ports: [{ service: 'web', port: 3000, name: 'WEB_PORT' }]
     })
-  
+
     mockPorts.allocatePort.mockResolvedValueOnce(10001)
-  
+
     // 👇 on force une erreur ici pour déclencher le catch
     mockTemplateEngine.renderToFile.mockRejectedValue(new Error('template fail'))
-  
+
     await expect(
       stackManager.deploy(
         {
@@ -125,10 +132,82 @@ describe('StackManager.deploy', () => {
         'fail-project'
       )
     ).rejects.toThrow('template fail')
-  
+
     expect(mockTemplateEngine.renderToFile).toHaveBeenCalled()
     expect(mockDocker.up).not.toHaveBeenCalled()
-    expect(mockDb.query).not.toHaveBeenCalled()
   })
-  
+
+  it('log un avertissement et retourne si le fichier config.yml est manquant', async () => {
+    const stackManager = new StackManager()
+
+    // Mock tout comme avant
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+      if (filePath.toString().includes('config.yml')) {
+        throw new Error('File not found xxx') // Simulate missing config.yml
+      }
+      return {} as Stats // Simulate other files exist
+    })
+
+    const loggerSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {})
+
+    await stackManager.deploy(
+      {
+        mr_id: 'mr-missing-config',
+        status: 'open',
+        branch: 'missing-config',
+        repo: 'valcriss/missing-config',
+        sha: 'deadbeef',
+        author: 'tester'
+      },
+      'missing-config-project'
+    )
+
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Unable to find the configuration file')
+    )
+    expect(mockDocker.up).not.toHaveBeenCalled()
+    expect(mockDb.query).not.toHaveBeenCalled()
+
+    loggerSpy.mockRestore()
+  })
+
+  it('log un avertissement et retourne si le fichier docker-compose.yml est manquant', async () => {
+    const stackManager = new StackManager()
+
+    // Mock tout comme avant
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+      if (filePath.toString().includes('docker-compose.yml')) {
+        throw new Error('File not found') // Simulate missing docker-compose.yml
+      }
+      return {} as Stats // Simulate other files exist
+    })
+
+    const loggerSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {})
+
+    await stackManager.deploy(
+      {
+        mr_id: 'mr-missing-compose',
+        status: 'open',
+        branch: 'missing-compose',
+        repo: 'valcriss/missing-compose',
+        sha: 'deadbeef',
+        author: 'tester'
+      },
+      'missing-compose-project'
+    )
+
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Unable to find the docker-compose file')
+    )
+    expect(mockDocker.up).not.toHaveBeenCalled()
+    expect(mockDb.query).not.toHaveBeenCalled()
+
+    loggerSpy.mockRestore()
+  })
 })

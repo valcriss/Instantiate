@@ -12,7 +12,7 @@ type GitlabReqBody = {
     author_id: number
   }
   project: {
-    path_with_namespace: string
+    git_http_url: string
   }
 }
 
@@ -23,8 +23,8 @@ export function parseGitlabWebhook(body: GitlabReqBody): MergeRequestPayload {
     mr_id: mr.id.toString(),
     status: ['closed', 'merged'].includes(mr.state) ? 'closed' : 'open',
     branch: mr.source_branch,
-    repo: body.project.path_with_namespace,
+    repo: body.project.git_http_url,
     sha: mr.last_commit.id,
-    author: mr.author_id.toString() // ou utiliser `user.username` si besoin
+    author: mr.author_id.toString()
   }
 }

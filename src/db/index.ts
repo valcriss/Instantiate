@@ -4,17 +4,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const pool = new Pool({
-  connectionString:
-    'postgresql://' +
-    process.env.DATABASE_USER +
-    ':' +
-    process.env.DATABASE_PASSWORD +
-    '@' +
-    process.env.DATABASE_HOST +
-    ':' +
-    process.env.DATABASE_PORT +
-    '/' +
-    process.env.DATABASE_NAME
+  connectionString: process.env.DATABASE_URL
 })
 
 export default {

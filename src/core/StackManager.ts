@@ -14,10 +14,10 @@ export class StackManager {
   async deploy(payload: MergeRequestPayload, projectKey: string) {
     const mrId = payload.mr_id
     const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
-    const cloneUrl = `https://github.com/${payload.repo}.git` // à adapter selon SCM
+    const cloneUrl = `${payload.repo}` // à adapter selon SCM
 
     try {
-      logger.info(`[stack] Déploiement de la stack MR #${mrId}`)
+      logger.info(`[stack] Starting the deployment of the stack for MR #${mrId}`)
 
       // Nettoyage et préparation dossier temporaire
       await fs.rm(tmpPath, { recursive: true, force: true })
@@ -28,18 +28,48 @@ export class StackManager {
       await git.clone(cloneUrl, tmpPath, ['--branch', payload.branch])
 
       // Lecture du fichier de config YAML
-      const configRaw = await fs.readFile(path.join(tmpPath, '.instantiate', 'config.yml'), 'utf-8')
-      const config = YAML.parse(configRaw)
+      const configPath = path.join(tmpPath, '.instantiate', 'config.yml')
+      const configExists = await fs
+        .stat(configPath)
+        .then(() => true)
+        .catch(() => false)
+      if (!configExists) {
+        logger.warn(`[stack] Unable to find the configuration file in current branch [${payload.branch}] : ${configPath}`)
+        return
+      }
 
       const composeInput = path.join(tmpPath, '.instantiate', 'docker-compose.yml')
+      const composeExists = await fs
+        .stat(composeInput)
+        .then(() => true)
+        .catch(() => false)
+      if (!composeExists) {
+        logger.warn(`[stack] Unable to find the docker-compose file in current branch [${payload.branch}] : ${composeInput}`)
+        return
+      }
+
+      // Stockage de l'état de la MR
+      await db.query(
+        `
+        INSERT INTO merge_requests (mr_id, repo, status, created_at, updated_at)
+        VALUES ($1, $2, $3, NOW(), NOW())
+        ON CONFLICT (mr_id) DO UPDATE
+        SET status = $3, updated_at = NOW()
+        `,
+        [mrId, payload.repo, payload.status]
+      )
+
+      // Lecture du fichier de configuration
+      const configRaw = await fs.readFile(path.join(tmpPath, '.instantiate', 'config.yml'), 'utf-8')
+      const config = YAML.parse(configRaw)
       const composeOutput = path.join(tmpPath, 'docker-compose.yml')
 
       // Préparation des ports dynamiques pour chaque service déclaré
       const ports: Record<string, number> = {}
       if (config.expose_ports) {
         for (const entry of config.expose_ports) {
-          const port = await PortAllocator.allocatePort(mrId, entry.service, entry.port)
-          ports[entry.service.toUpperCase() + '_PORT'] = port
+          const port = await PortAllocator.allocatePort(mrId, entry.service, entry.name, entry.port)
+          ports[entry.name] = port
         }
       }
 
@@ -56,20 +86,9 @@ export class StackManager {
       // Lancement des containers
       await DockerService.up(tmpPath, `mr-${mrId}`)
 
-      // Stockage de l'état de la MR
-      await db.query(
-        `
-        INSERT INTO merge_requests (mr_id, repo, status, created_at, updated_at)
-        VALUES ($1, $2, $3, NOW(), NOW())
-        ON CONFLICT (mr_id) DO UPDATE
-        SET status = $3, updated_at = NOW()
-        `,
-        [mrId, payload.repo, payload.status]
-      )
-
-      logger.info(`[stack] ✅ Stack MR #${mrId} lancée avec succès !`)
+      logger.info(`[stack] Stack for the MR #${mrId} successfully deployed`)
     } catch (err) {
-      logger.error({ err }, `[stack] Erreur lors du déploiement de MR #${mrId}`)
+      logger.error(`[stack] Error during the deployment of the stack for MR #${mrId}`)
       throw err
     }
   }
@@ -79,18 +98,15 @@ export class StackManager {
     const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
 
     try {
-      logger.info(`[stack] 🧹 Destruction de la stack MR #${mrId}`)
+      logger.info(`[stack] Removing of the stack for MR #${mrId}`)
       await DockerService.down(tmpPath, `mr-${mrId}`)
       await PortAllocator.releasePorts(mrId)
 
-      await db.query(`UPDATE merge_requests SET status = $1, updated_at = NOW() WHERE mr_id = $2`, [
-        'closed',
-        mrId
-      ])
+      await db.query(`UPDATE merge_requests SET status = $1, updated_at = NOW() WHERE mr_id = $2`, ['closed', mrId])
 
-      logger.info(`[stack] Stack supprimée pour MR #${mrId}`)
+      logger.info(`[stack] Stack for MR #${mrId} successfully removed`)
     } catch (err) {
-      logger.error({ err }, `[stack] Erreur lors de la suppression de MR #${mrId}`)
+      logger.error(`[stack] Error during the removal of the stack for MR #${mrId}`)
       throw err
     }
   }
