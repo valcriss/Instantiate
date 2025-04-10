@@ -87,6 +87,7 @@ export class StackManager {
       await DockerService.up(tmpPath, `mr-${mrId}`)
 
       logger.info(`[stack] Stack for the MR #${mrId} successfully deployed`)
+      
     } catch (err) {
       logger.error(`[stack] Error during the deployment of the stack for MR #${mrId}`)
       throw err
@@ -105,6 +106,8 @@ export class StackManager {
       await db.query(`UPDATE merge_requests SET status = $1, updated_at = NOW() WHERE mr_id = $2`, ['closed', mrId])
 
       logger.info(`[stack] Stack for MR #${mrId} successfully removed`)
+
+      await fs.rm(tmpPath, { recursive: true, force: true })
     } catch (err) {
       logger.error(`[stack] Error during the removal of the stack for MR #${mrId}`)
       throw err

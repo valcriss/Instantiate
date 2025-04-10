@@ -7,10 +7,10 @@ export class DockerService {
     await execa('docker-compose', ['-p', projectName, 'up', '-d'], {
       cwd: stackPath,
       stdout: function* (line: string | Uint8Array | unknown) {
-        logger.info(`[docker] ${line}`)
+        logger.info(`[docker]${line}`)
       },
       stderr: function* (line: string | Uint8Array | unknown) {
-        logger.info(`[docker] ${line}`)
+        logger.info(`[docker]${line}`)
       }
     })
   }
@@ -21,10 +21,10 @@ export class DockerService {
     await execa('docker-compose', ['-p', projectName, 'down', '--volumes'], {
       cwd: stackPath,
       stdout: function* (line: string | Uint8Array | unknown) {
-        logger.info(`[docker] ${line}`)
+        logger.info(`[docker]${line}`)
       },
       stderr: function* (line: string | Uint8Array | unknown) {
-        logger.info(`[docker] ${line}`)
+        logger.info(`[docker]${line}`)
       }
     })
   }
