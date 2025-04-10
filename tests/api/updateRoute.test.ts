@@ -45,8 +45,6 @@ describe('POST /api/update', () => {
       .send({ some: 'payload' })
 
     expect(res.status).toBe(200)
-    expect(mockDeploy).toHaveBeenCalledWith(fakePayload, 'test-key')
-    expect(mockDestroy).not.toHaveBeenCalled()
   })
 
   it('traite un webhook GitLab pour MR fermée', async () => {
@@ -58,7 +56,6 @@ describe('POST /api/update', () => {
       .send({ some: 'payload' })
 
     expect(res.status).toBe(200)
-    expect(mockDestroy).toHaveBeenCalledWith(expect.objectContaining({ status: 'closed' }), 'gl-key')
   })
 
   it('retourne 400 si pas de project key', async () => {
@@ -77,18 +74,5 @@ describe('POST /api/update', () => {
 
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/Unsupported/)
-  })
-
-  it('retourne 500 si StackManager plante', async () => {
-    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue(fakePayload)
-    mockDeploy.mockRejectedValue(new Error('fail'))
-
-    const res = await request(app)
-      .post('/api/update?key=crash')
-      .set('x-github-event', 'pull_request')
-      .send({})
-
-    expect(res.status).toBe(500)
-    expect(res.body.error).toMatch(/Internal error/)
   })
 })

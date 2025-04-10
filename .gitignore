@@ -2,3 +2,5 @@ node_modules
 coverage
 dist
 gitlab/
+mqtt/data
+mqtt/log
