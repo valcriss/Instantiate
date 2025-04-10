@@ -87,7 +87,6 @@ export class StackManager {
       await DockerService.up(tmpPath, `mr-${mrId}`)
 
       logger.info(`[stack] Stack for the MR #${mrId} successfully deployed`)
-      
     } catch (err) {
       logger.error(`[stack] Error during the deployment of the stack for MR #${mrId}`)
       throw err
