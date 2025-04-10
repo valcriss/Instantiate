@@ -12,7 +12,7 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint --ext .ts src",
     "format": "eslint --ext .ts src --fix",
-    "coverage:publish": "gh-pages -d coverage/lcov-report -b gh-pages"
+    "coverage:publish": "gh-pages -d coverage/lcov-report -b gh-pages -r https://x-access-token:${GITHUB_TOKEN}@github.com/valcriss/Instantiate.git"
   },
   "keywords": [],
   "author": "",
