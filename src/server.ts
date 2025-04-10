@@ -12,10 +12,10 @@ app.use(express.json())
 app.use('/api', updateRoute)
 
 app.get('/', (req, res) => {
-    res.send('Instantiate backend is running!')
+  res.send('Instantiate backend is running!')
 })
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
-    logger.info(`Server running on port ${PORT}`)
+  logger.info(`Server running on port ${PORT}`)
 })

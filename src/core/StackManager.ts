@@ -83,10 +83,10 @@ export class StackManager {
       await DockerService.down(tmpPath, `mr-${mrId}`)
       await PortAllocator.releasePorts(mrId)
 
-      await db.query(
-        `UPDATE merge_requests SET status = $1, updated_at = NOW() WHERE mr_id = $2`,
-        ['closed', mrId]
-      )
+      await db.query(`UPDATE merge_requests SET status = $1, updated_at = NOW() WHERE mr_id = $2`, [
+        'closed',
+        mrId
+      ])
 
       logger.info(`[stack] Stack supprimée pour MR #${mrId}`)
     } catch (err) {

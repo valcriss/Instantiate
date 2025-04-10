@@ -1,6 +1,22 @@
+import express from 'express'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 
-export function parseGitlabWebhook(body: any): MergeRequestPayload {
+type GitlabReqBody = {
+  object_attributes: {
+    id: number
+    state: string
+    source_branch: string
+    last_commit: {
+      id: string
+    }
+    author_id: number
+  }
+  project: {
+    path_with_namespace: string
+  }
+}
+
+export function parseGitlabWebhook(body: GitlabReqBody): MergeRequestPayload {
   const mr = body.object_attributes
 
   return {
