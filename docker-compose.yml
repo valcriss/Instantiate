@@ -1,0 +1,41 @@
+services:
+  instantiate:
+    image: danielsilvestre37/instantiate:latest
+    container_name: instantiate
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - HOST_DOMAIN=localhost
+      - HOST_SCHEME=http
+      - DATABASE_URL=postgresql://instantiate:instantiate@database:5432/instantiate
+      - MQTT_BROKER_URL=mqtt://broker:1883
+  database:
+    image: postgres:latest
+    container_name: database
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=instantiate
+      - POSTGRES_PASSWORD=instantiate
+      - POSTGRES_DB=instantiate
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  broker:
+    image: eclipse-mosquitto:latest
+    container_name: broker
+    restart: unless-stopped
+    volumes:
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_config:/mosquitto/config
+      - mosquitto_log:/mosquitto/log
+
+volumes:
+  db_data:
+    driver: local
+  mosquitto_data:
+    driver: local
+  mosquitto_config:
+    driver: local
+  mosquitto_log:
+    driver: local
