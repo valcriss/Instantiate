@@ -1,5 +1,7 @@
 FROM node:23-slim
 
+RUN apt-get update && apt-get install -y procps && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copier uniquement les fichiers nécessaires pour l'installation des dépendances
