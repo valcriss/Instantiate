@@ -17,7 +17,7 @@ describe('parseGithubWebhook', () => {
       },
       repository: {
         id: 'valcriss',
-        full_name: 'valcriss/instantiate-demo'
+        clone_url: 'valcriss/instantiate-demo'
       }
     }
 
@@ -48,8 +48,8 @@ describe('parseGithubWebhook', () => {
         }
       },
       repository: {
-        id: 'valcriss',
-        full_name: 'octo/test'
+        id: '123456',
+        clone_url: 'octo/test'
       }
     }
 

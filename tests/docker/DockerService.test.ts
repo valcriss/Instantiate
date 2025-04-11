@@ -18,7 +18,11 @@ describe('DockerService', () => {
 
     await DockerService.up(path, projectName)
 
-    expect(mockedExeca).toHaveBeenCalledWith('docker-compose', ['-p', projectName, 'up', '-d'], expect.objectContaining({ cwd: path }))
+    expect(mockedExeca).toHaveBeenCalledWith(
+      'docker-compose',
+      ['-p', projectName, 'up', '-d', '--force-recreate', '--build'],
+      expect.objectContaining({ cwd: path })
+    )
   })
 
   it('lance docker-compose down avec les bons arguments', async () => {

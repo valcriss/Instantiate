@@ -2,7 +2,7 @@ import express from 'express'
 import logger from '../utils/logger'
 import { parseGitlabWebhook } from '../providers/gitlab'
 import { parseGithubWebhook } from '../providers/github'
-import { publishUpdateEvent } from '../mqtt/MQTTClient'
+import { ensureMQTTClientIsInitialized, publishUpdateEvent } from '../mqtt/MQTTClient'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 
 const router = express.Router()
@@ -45,6 +45,7 @@ router.post('/update', async (req: any, res: any) => {
 
 function enqueueUpdateEvent(data: { payload: MergeRequestPayload; projectKey: string }) {
   try {
+    ensureMQTTClientIsInitialized()
     publishUpdateEvent(data)
   } catch (err) {
     logger.error('[api] Failed to enqueue update event')

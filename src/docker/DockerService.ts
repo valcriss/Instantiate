@@ -4,7 +4,7 @@ export class DockerService {
   static async up(stackPath: string, projectName: string): Promise<void> {
     const { execa } = await import('execa')
     logger.info(`[docker] Stack started : ${projectName}`)
-    await execa('docker-compose', ['-p', projectName, 'up', '-d'], {
+    await execa('docker-compose', ['-p', projectName, 'up', '-d', '--force-recreate', '--build'], {
       cwd: stackPath,
       stdout: function* (line: string | Uint8Array | unknown) {
         logger.info(`[docker]${line}`)
