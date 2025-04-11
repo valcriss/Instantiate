@@ -1,6 +1,6 @@
 services:
   instantiate:
-    image: danielsilvestre37/instantiate:latest
+    image: danielsilvestre37/instantiate:1.0.0
     container_name: instantiate
     restart: unless-stopped
     ports:
