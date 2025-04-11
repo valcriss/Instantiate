@@ -15,3 +15,7 @@ client.on('error', (err) => {
 export function publishUpdateEvent(data: { payload: MergeRequestPayload; projectKey: string }) {
   client.publish('instantiate/update', JSON.stringify(data))
 }
+
+export function closeConnection() {
+  client.end()
+}

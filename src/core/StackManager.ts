@@ -14,7 +14,10 @@ export class StackManager {
   async deploy(payload: MergeRequestPayload, projectKey: string) {
     const mrId = payload.mr_id
     const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
-    const cloneUrl = `${payload.repo}` // à adapter selon SCM
+    const cloneUrl = `${payload.repo}`
+    const hostdomain = process.env.HOST_DOMAIN || 'localhost'
+    const hostScheme = process.env.HOST_SCHEME || 'http'
+    const hostDns = `${hostScheme}://${hostdomain}`
 
     try {
       logger.info(`[stack] Starting the deployment of the stack for MR #${mrId}`)
@@ -60,7 +63,7 @@ export class StackManager {
       )
 
       // Lecture du fichier de configuration
-      const configRaw = await fs.readFile(path.join(tmpPath, '.instantiate', 'config.yml'), 'utf-8')
+      const configRaw = await fs.readFile(configPath, 'utf-8')
       const config = YAML.parse(configRaw)
       const composeOutput = path.join(tmpPath, 'docker-compose.yml')
 
@@ -77,6 +80,7 @@ export class StackManager {
       const context = {
         MR_ID: mrId,
         PROJECT_KEY: projectKey,
+        HOST_DNS: hostDns,
         ...ports // injecte WEB_PORT, API_PORT, etc.
       }
 

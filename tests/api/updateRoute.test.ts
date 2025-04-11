@@ -4,6 +4,8 @@ import updateRoute from '../../src/api/update'
 import * as github from '../../src/providers/github'
 import * as gitlab from '../../src/providers/gitlab'
 import { StackManager } from '../../src/core/StackManager'
+import { closeConnection } from '../../src/mqtt/MQTTClient'
+import { closeLogger } from '../../src/utils/logger'
 
 jest.mock('../../src/providers/github')
 jest.mock('../../src/providers/gitlab')
@@ -12,11 +14,11 @@ jest.mock('../../src/core/StackManager')
 const mockDeploy = jest.fn()
 const mockDestroy = jest.fn()
 
-// remplace les méthodes de la classe StackManager
-;(StackManager as jest.Mock).mockImplementation(() => ({
-  deploy: mockDeploy,
-  destroy: mockDestroy
-}))
+  // remplace les méthodes de la classe StackManager
+  ; (StackManager as jest.Mock).mockImplementation(() => ({
+    deploy: mockDeploy,
+    destroy: mockDestroy
+  }))
 
 const app = express()
 app.use(express.json())
@@ -25,6 +27,11 @@ app.use('/api', updateRoute)
 describe('POST /api/update', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+
+  afterAll(() => {
+    closeConnection()
+    closeLogger()
   })
 
   const fakePayload = {
@@ -37,7 +44,7 @@ describe('POST /api/update', () => {
   }
 
   it('traite un webhook GitHub pour MR ouverte', async () => {
-    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue(fakePayload)
+    ; (github.parseGithubWebhook as jest.Mock).mockReturnValue(fakePayload)
 
     const res = await request(app)
       .post('/api/update?key=test-key')
@@ -48,7 +55,7 @@ describe('POST /api/update', () => {
   })
 
   it('traite un webhook GitLab pour MR fermée', async () => {
-    ;(gitlab.parseGitlabWebhook as jest.Mock).mockReturnValue({ ...fakePayload, status: 'closed' })
+    ; (gitlab.parseGitlabWebhook as jest.Mock).mockReturnValue({ ...fakePayload, status: 'closed' })
 
     const res = await request(app)
       .post('/api/update?key=gl-key')

@@ -3,6 +3,8 @@ import { DockerService } from '../../src/docker/DockerService'
 import db from '../../src/db'
 import { PortAllocator } from '../../src/core/PortAllocator'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
+import { closeLogger } from '../../src/utils/logger'
+import { closeConnection } from '../../src/mqtt/MQTTClient'
 
 jest.mock('../../src/docker/DockerService')
 jest.mock('../../src/db')
@@ -30,6 +32,11 @@ describe('StackManager.destroy', () => {
     jest.clearAllMocks()
   })
 
+  afterAll(() => {
+    closeConnection()
+    closeLogger()
+  })
+
   it('supprime la stack et libère les ports', async () => {
     mockDocker.down.mockResolvedValue()
     mockPorts.releasePorts.mockResolvedValue()
@@ -55,9 +62,9 @@ describe('StackManager.destroy', () => {
 
   it('log et relance une erreur si une étape échoue (ex: docker down)', async () => {
     const stackManager = new StackManager()
-  
+
     mockDocker.down.mockRejectedValueOnce(new Error('docker down fail'))
-  
+
     const payload = {
       mr_id: 'mr-error',
       status: 'closed',
@@ -66,12 +73,12 @@ describe('StackManager.destroy', () => {
       sha: 'failsha',
       author: 'failbot'
     }
-  
+
     await expect(stackManager.destroy(payload as MergeRequestPayload, 'key')).rejects.toThrow('docker down fail')
-  
+
     expect(mockDocker.down).toHaveBeenCalled()
     expect(mockPorts.releasePorts).not.toHaveBeenCalled()
     expect(mockDb.query).not.toHaveBeenCalled()
   })
-  
+
 })

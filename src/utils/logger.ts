@@ -16,4 +16,9 @@ const logger = pino({
       }
 })
 
+export function closeLogger() {
+  logger.flush()
+  logger.removeAllListeners()
+}
+
 export default logger

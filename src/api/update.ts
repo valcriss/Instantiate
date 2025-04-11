@@ -34,9 +34,9 @@ router.post('/update', async (req: any, res: any) => {
 
     logger.info(`[api] Received ${payload.status} event for MR #${payload.mr_id} from ${provider}`)
 
-    res.status(200).json({ success: true })
-
     enqueueUpdateEvent({ payload, projectKey })
+
+    res.status(200).json({ success: true })
   } catch (err: unknown) {
     logger.error('[api] Error handling webhook')
     res.status(500).json({ error: 'Internal error' })
