@@ -33,12 +33,8 @@ describe('TemplateEngine', () => {
       '/output': {}
     })
 
-    await expect(
-      TemplateEngine.renderToFile('/input/missing.yml', '/output/fail.yml', {})
-    ).rejects.toThrow()
+    await expect(TemplateEngine.renderToFile('/input/missing.yml', '/output/fail.yml', {})).rejects.toThrow()
 
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining('[template] Error while rendering the template /input/missing.yml')
-    )
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('[template] Error while rendering the template /input/missing.yml'))
   })
 })

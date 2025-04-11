@@ -14,6 +14,7 @@ type GithubReqBody = {
   action: string
   repository: {
     full_name: string
+    id: string,
   }
 }
 
@@ -21,6 +22,7 @@ export function parseGithubWebhook(body: GithubReqBody): MergeRequestPayload {
   const pr = body.pull_request
 
   return {
+    project_id: body.repository.id,
     mr_id: pr.id.toString(),
     status: body.action === 'closed' ? 'closed' : 'open',
     branch: pr.head.ref,

@@ -14,6 +14,7 @@ describe('parseGitlabWebhook', () => {
         author_id: 99
       },
       project: {
+        id: 'valcriss',
         git_http_url: 'valcriss/instantiate-gl'
       },
       user: {
@@ -24,6 +25,7 @@ describe('parseGitlabWebhook', () => {
     const result: MergeRequestPayload = parseGitlabWebhook(body)
 
     expect(result).toEqual({
+      project_id: 'valcriss',
       mr_id: '54321',
       status: 'open',
       branch: 'feature/gl-feature',
@@ -45,6 +47,7 @@ describe('parseGitlabWebhook', () => {
         author_id: 1
       },
       project: {
+        id: 'valcriss',
         git_http_url: 'group/project'
       },
       user: {

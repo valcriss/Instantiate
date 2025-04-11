@@ -12,6 +12,7 @@ import { PortAllocator } from './PortAllocator'
 
 export class StackManager {
   async deploy(payload: MergeRequestPayload, projectKey: string) {
+    const projectId = payload.project_id
     const mrId = payload.mr_id
     const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
     const cloneUrl = `${payload.repo}`
@@ -51,16 +52,7 @@ export class StackManager {
         return
       }
 
-      // Stockage de l'état de la MR
-      await db.query(
-        `
-        INSERT INTO merge_requests (mr_id, repo, status, created_at, updated_at)
-        VALUES ($1, $2, $3, NOW(), NOW())
-        ON CONFLICT (mr_id) DO UPDATE
-        SET status = $3, updated_at = NOW()
-        `,
-        [mrId, payload.repo, payload.status]
-      )
+      await db.updateMergeRequest(payload, payload.status)
 
       // Lecture du fichier de configuration
       const configRaw = await fs.readFile(configPath, 'utf-8')
@@ -71,7 +63,7 @@ export class StackManager {
       const ports: Record<string, number> = {}
       if (config.expose_ports) {
         for (const entry of config.expose_ports) {
-          const port = await PortAllocator.allocatePort(mrId, entry.service, entry.name, entry.port)
+          const port = await PortAllocator.allocatePort(projectId, mrId, entry.service, entry.name, entry.port)
           ports[entry.name] = port
         }
       }
@@ -98,15 +90,16 @@ export class StackManager {
   }
 
   async destroy(payload: MergeRequestPayload, projectKey: string) {
+    const projectId = payload.project_id
     const mrId = payload.mr_id
     const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
 
     try {
       logger.info(`[stack] Removing of the stack for MR #${mrId}`)
       await DockerService.down(tmpPath, `mr-${mrId}`)
-      await PortAllocator.releasePorts(mrId)
+      await PortAllocator.releasePorts(projectId, mrId)
 
-      await db.query(`UPDATE merge_requests SET status = $1, updated_at = NOW() WHERE mr_id = $2`, ['closed', mrId])
+      await db.updateMergeRequest(payload, 'closed')
 
       logger.info(`[stack] Stack for MR #${mrId} successfully removed`)
 

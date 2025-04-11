@@ -18,6 +18,7 @@ describe('StackManager.destroy', () => {
   const stackManager = new StackManager()
 
   const payload = {
+    project_id: 'valcriss',
     mr_id: 'mr-99',
     status: 'closed',
     branch: 'fix/crash',
@@ -40,24 +41,18 @@ describe('StackManager.destroy', () => {
   it('supprime la stack et libère les ports', async () => {
     mockDocker.down.mockResolvedValue()
     mockPorts.releasePorts.mockResolvedValue()
-    mockDb.query.mockResolvedValue({ rows: [], command: '', rowCount: 0, oid: 0, fields: [] })
+    mockDb.releasePorts.mockResolvedValue()
 
     await stackManager.destroy(payload as MergeRequestPayload, projectKey)
 
     // ✅ Vérifie l’arrêt de Docker
-    expect(mockDocker.down).toHaveBeenCalledWith(
-      expect.stringContaining('instantiate'),
-      `mr-${payload.mr_id}`
-    )
+    expect(mockDocker.down).toHaveBeenCalledWith(expect.stringContaining('instantiate'), `mr-${payload.mr_id}`)
 
     // ✅ Vérifie la libération des ports
-    expect(mockPorts.releasePorts).toHaveBeenCalledWith(payload.mr_id)
+    expect(mockPorts.releasePorts).toHaveBeenCalledWith('valcriss', payload.mr_id)
 
     // ✅ Vérifie la mise à jour en base
-    expect(mockDb.query).toHaveBeenCalledWith(
-      expect.stringContaining('UPDATE merge_requests'),
-      ['closed', payload.mr_id]
-    )
+    expect(mockDb.updateMergeRequest).toHaveBeenCalledWith({"author": "valcriss", "branch": "fix/crash", "mr_id": "mr-99", "project_id": "valcriss", "repo": "valcriss/crashy", "sha": "deadbeef999", "status": "closed"}, "closed")
   })
 
   it('log et relance une erreur si une étape échoue (ex: docker down)', async () => {
@@ -65,7 +60,8 @@ describe('StackManager.destroy', () => {
 
     mockDocker.down.mockRejectedValueOnce(new Error('docker down fail'))
 
-    const payload = {
+    const payload : MergeRequestPayload = {
+      project_id: 'valcriss',
       mr_id: 'mr-error',
       status: 'closed',
       branch: 'hotfix',
@@ -78,7 +74,6 @@ describe('StackManager.destroy', () => {
 
     expect(mockDocker.down).toHaveBeenCalled()
     expect(mockPorts.releasePorts).not.toHaveBeenCalled()
-    expect(mockDb.query).not.toHaveBeenCalled()
+    expect(mockDb.updateMergeRequest).not.toHaveBeenCalled()
   })
-
 })

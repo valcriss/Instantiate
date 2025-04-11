@@ -14,11 +14,7 @@ export class PortAllocator {
     const usedPorts = await db.getUsedPorts()
     for (let port = PORT_MIN; port <= PORT_MAX; port++) {
       if (!usedPorts.has(port)) {
-        await db.query(
-          `INSERT INTO exposed_ports (mr_id, service, name, internal_port, external_port)
-           VALUES ($1, $2, $3, $4, $5)`,
-          [mrId, service, name, internalPort, port]
-        )
+        await db.addExposedPorts(projectId, mrId, service, name, internalPort, port)
         logger.info(`[port] Port allocated : ${port} for ${service} ${name} (MR:${mrId})`)
         return port
       }
@@ -27,17 +23,12 @@ export class PortAllocator {
     throw new Error('There is no available port')
   }
 
-  static async releasePorts(mrId: string): Promise<void> {
-    await db.query(`DELETE FROM exposed_ports WHERE mr_id = $1`, [mrId])
+  static async releasePorts(projectId: string, mrId: string): Promise<void> {
+    await db.releasePorts(projectId, mrId)
     logger.info(`[port] Ports released for MR #${mrId}`)
   }
 
-  static async getPortsForMr(mrId: string): Promise<{ [service: string]: number }> {
-    const result = await db.query(`SELECT service, external_port FROM exposed_ports WHERE mr_id = $1`, [mrId])
-    const map: Record<string, number> = {}
-    for (const row of result.rows) {
-      map[row.service] = row.external_port
-    }
-    return map
+  static async getPortsForMr(projectId: string, mrId: string): Promise<{ [service: string]: number }> {
+    return await db.getPortsForMr(projectId, mrId)
   }
 }

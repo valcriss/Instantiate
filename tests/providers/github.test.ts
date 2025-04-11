@@ -16,6 +16,7 @@ describe('parseGithubWebhook', () => {
         }
       },
       repository: {
+        id: 'valcriss',
         full_name: 'valcriss/instantiate-demo'
       }
     }
@@ -23,6 +24,7 @@ describe('parseGithubWebhook', () => {
     const result: MergeRequestPayload = parseGithubWebhook(body)
 
     expect(result).toEqual({
+      project_id: 'valcriss',
       mr_id: '123456',
       status: 'open',
       branch: 'feature/awesome-feature',
@@ -46,6 +48,7 @@ describe('parseGithubWebhook', () => {
         }
       },
       repository: {
+        id: 'valcriss',
         full_name: 'octo/test'
       }
     }

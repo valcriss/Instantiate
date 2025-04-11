@@ -30,12 +30,14 @@ describe('logger (utils/logger.ts)', () => {
 
     const logger = require('../../src/utils/logger').default
 
-    expect(mockPino).toHaveBeenCalledWith(expect.objectContaining({
-      level: 'debug',
-      transport: expect.objectContaining({
-        target: 'pino-pretty'
+    expect(mockPino).toHaveBeenCalledWith(
+      expect.objectContaining({
+        level: 'debug',
+        transport: expect.objectContaining({
+          target: 'pino-pretty'
+        })
       })
-    }))
+    )
 
     logger.info('test log')
     expect(infoSpy).toHaveBeenCalledWith('test log')

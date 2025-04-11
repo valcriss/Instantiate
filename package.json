@@ -10,8 +10,8 @@
     "test": "jest --detectOpenHandles",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint --ext .ts src",
-    "format": "eslint --ext .ts src --fix",
+    "lint": "eslint --ext .ts src migrations tests",
+    "format": "eslint --ext .ts src migrations tests --fix",
     "coverage:publish": "gh-pages -d coverage/lcov-report -b gh-pages -r https://x-access-token:${GITHUB_TOKEN}@github.com/valcriss/Instantiate.git",
     "worker:mqtt": "ts-node src/mqtt/MQTTWorker.ts"
   },
