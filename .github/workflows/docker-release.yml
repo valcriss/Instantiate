@@ -30,6 +30,6 @@ jobs:
       - name: 🐋 Build and push Docker image
         run: |
           TAG=${GITHUB_REF##*/}
-          IMAGE=valcriss/instantiate:$TAG
+          IMAGE=danielsilvestre37/instantiate:$TAG
           docker build -t $IMAGE .
           docker push $IMAGE
