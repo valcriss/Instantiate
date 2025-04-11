@@ -13,7 +13,7 @@ type GithubReqBody = {
   }
   action: string
   repository: {
-    full_name: string
+    clone_url: string
     id: string
   }
 }
@@ -26,7 +26,7 @@ export function parseGithubWebhook(body: GithubReqBody): MergeRequestPayload {
     mr_id: pr.id.toString(),
     status: body.action === 'closed' ? 'closed' : 'open',
     branch: pr.head.ref,
-    repo: body.repository.full_name,
+    repo: body.repository.clone_url,
     sha: pr.head.sha,
     author: pr.user.login
   }

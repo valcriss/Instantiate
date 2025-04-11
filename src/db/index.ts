@@ -28,7 +28,7 @@ export default {
   addExposedPorts: async (projectId: string, mrId: string, service: string, name: string, internalPort: number, port: number) => {
     await pool.query(
       `INSERT INTO exposed_ports (project_id, mr_id, service, name, internal_port, external_port)
-       VALUES ($1, $2, $3, $4, $5)`,
+       VALUES ($1, $2, $3, $4, $5, $6)`,
       [projectId, mrId, service, name, internalPort, port]
     )
   },

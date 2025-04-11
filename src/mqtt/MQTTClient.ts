@@ -4,6 +4,12 @@ import { MergeRequestPayload } from '../types/MergeRequestPayload'
 
 let client: MqttClient
 
+export function ensureMQTTClientIsInitialized() {
+  if (!client) {
+    initializeMQTTClient()
+  }
+}
+
 export function initializeMQTTClient(brokerUrl: string = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883') {
   client = mqtt.connect(brokerUrl)
 

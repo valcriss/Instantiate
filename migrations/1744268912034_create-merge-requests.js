@@ -11,8 +11,8 @@ exports.shorthands = undefined
 exports.up = (pgm) => {
   pgm.createTable('merge_requests', {
     id: 'id',
-    project_id: { type: 'text', notNull: true },
-    mr_id: { type: 'text', notNull: true },
+    project_id: { type: 'double', notNull: true },
+    mr_id: { type: 'double', notNull: true },
     repo: { type: 'text', notNull: true },
     status: { type: 'text', notNull: true },
     created_at: { type: 'timestamp', default: pgm.func('NOW()') },
@@ -25,8 +25,8 @@ exports.up = (pgm) => {
 
   pgm.createTable('exposed_ports', {
     id: 'id',
-    project_id: { type: 'text', notNull: true },
-    mr_id: { type: 'text', notNull: true, references: '"merge_requests"', onDelete: 'cascade' },
+    project_id: { type: 'double', notNull: true },
+    mr_id: { type: 'double', notNull: true },
     service: { type: 'text', notNull: true },
     name: { type: 'text', notNull: true },
     internal_port: { type: 'integer', notNull: true },
