@@ -39,7 +39,7 @@ export class StackManager {
         .catch(() => false)
       if (!configExists) {
         logger.warn(`[stack] Unable to find the configuration file in current branch [${payload.branch}] : ${configPath}`)
-        return
+        return null
       }
 
       const composeInput = path.join(tmpPath, '.instantiate', 'docker-compose.yml')
@@ -49,7 +49,7 @@ export class StackManager {
         .catch(() => false)
       if (!composeExists) {
         logger.warn(`[stack] Unable to find the docker-compose file in current branch [${payload.branch}] : ${composeInput}`)
-        return
+        return null
       }
 
       await db.updateMergeRequest(payload, payload.status)
@@ -83,6 +83,7 @@ export class StackManager {
       await DockerService.up(tmpPath, `mr-${mrId}`)
 
       logger.info(`[stack] Stack for the MR #${mrId} successfully deployed`)
+      return hostDns
     } catch (err) {
       logger.error(`[stack] Error during the deployment of the stack for MR #${mrId}`)
       throw err

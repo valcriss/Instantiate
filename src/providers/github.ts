@@ -14,7 +14,7 @@ type GithubReqBody = {
   action: string
   repository: {
     full_name: string
-    id: string,
+    id: string
   }
 }
 

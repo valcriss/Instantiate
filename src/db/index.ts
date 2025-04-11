@@ -56,4 +56,3 @@ export default {
   },
   getClient: () => pool.connect()
 }
-

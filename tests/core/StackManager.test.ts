@@ -46,9 +46,9 @@ describe('StackManager.deploy', () => {
     jest.clearAllMocks()
   })
 
-  afterAll(() => {
-    closeConnection()
-    closeLogger()
+  afterAll(async () => {
+    await closeConnection()
+    await closeLogger()
   })
 
   it('orchestre le déploiement complet d’une MR', async () => {
@@ -100,7 +100,8 @@ describe('StackManager.deploy', () => {
 
     expect(mockDocker.up).toHaveBeenCalled()
     expect(mockDb.updateMergeRequest).toHaveBeenCalledWith(
-      expect.objectContaining({"author": "valcriss", "branch": "feature/test", "mr_id": "mr-42", "project_id": "valcriss", "repo": "valcriss/test-repo", "sha": "abcdef123456", "status": "open"})
+      { author: 'valcriss', branch: 'feature/test', mr_id: 'mr-42', project_id: 'valcriss', repo: 'valcriss/test-repo', sha: 'abcdef123456', status: 'open' },
+      'open'
     )
   })
 
@@ -213,5 +214,119 @@ describe('StackManager.deploy', () => {
     expect(mockDb.addExposedPorts).not.toHaveBeenCalled()
 
     loggerSpy.mockRestore()
+  })
+})
+
+describe('StackManager environment variables', () => {
+  const originalHostDomain = process.env.HOST_DOMAIN
+  const originalHostScheme = process.env.HOST_SCHEME
+
+  afterEach(() => {
+    process.env.HOST_DOMAIN = originalHostDomain
+    process.env.HOST_SCHEME = originalHostScheme
+  })
+
+  it('should use default values when HOST_DOMAIN and HOST_SCHEME are not set', async () => {
+    delete process.env.HOST_DOMAIN
+    delete process.env.HOST_SCHEME
+
+    const stackManager = new StackManager()
+    const payload: MergeRequestPayload = {
+      project_id: 'test-project',
+      mr_id: 'mr-1',
+      status: 'open',
+      branch: 'main',
+      repo: 'test-repo',
+      sha: '123456',
+      author: 'tester'
+    }
+
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+      return {} as Stats
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+
+    const hostDns = await stackManager.deploy(payload, 'test-key')
+
+    expect(hostDns).toContain('http://localhost')
+  })
+
+  it('should use HOST_DOMAIN when it is set', async () => {
+    process.env.HOST_DOMAIN = 'custom-domain'
+    delete process.env.HOST_SCHEME
+
+    const stackManager = new StackManager()
+    const payload: MergeRequestPayload = {
+      project_id: 'test-project',
+      mr_id: 'mr-1',
+      status: 'open',
+      branch: 'main',
+      repo: 'test-repo',
+      sha: '123456',
+      author: 'tester'
+    }
+
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+      return {} as Stats
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+
+    const hostDns = await stackManager.deploy(payload, 'test-key')
+
+    expect(hostDns).toContain('http://custom-domain')
+  })
+
+  it('should use HOST_SCHEME when it is set', async () => {
+    delete process.env.HOST_DOMAIN
+    process.env.HOST_SCHEME = 'https'
+
+    const stackManager = new StackManager()
+    const payload: MergeRequestPayload = {
+      project_id: 'test-project',
+      mr_id: 'mr-1',
+      status: 'open',
+      branch: 'main',
+      repo: 'test-repo',
+      sha: '123456',
+      author: 'tester'
+    }
+
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+      return {} as Stats
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+
+    const hostDns = await stackManager.deploy(payload, 'test-key')
+
+    expect(hostDns).toContain('https://localhost')
+  })
+
+  it('should use both HOST_DOMAIN and HOST_SCHEME when they are set', async () => {
+    process.env.HOST_DOMAIN = 'custom-domain'
+    process.env.HOST_SCHEME = 'https'
+
+    const stackManager = new StackManager()
+    const payload: MergeRequestPayload = {
+      project_id: 'test-project',
+      mr_id: 'mr-1',
+      status: 'open',
+      branch: 'main',
+      repo: 'test-repo',
+      sha: '123456',
+      author: 'tester'
+    }
+
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+      return {} as Stats
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+
+    const hostDns = await stackManager.deploy(payload, 'test-key')
+
+    expect(hostDns).toContain('https://custom-domain')
   })
 })

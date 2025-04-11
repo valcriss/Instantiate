@@ -33,9 +33,9 @@ describe('StackManager.destroy', () => {
     jest.clearAllMocks()
   })
 
-  afterAll(() => {
-    closeConnection()
-    closeLogger()
+  afterAll(async () => {
+    await closeConnection()
+    await closeLogger()
   })
 
   it('supprime la stack et libère les ports', async () => {
@@ -52,7 +52,10 @@ describe('StackManager.destroy', () => {
     expect(mockPorts.releasePorts).toHaveBeenCalledWith('valcriss', payload.mr_id)
 
     // ✅ Vérifie la mise à jour en base
-    expect(mockDb.updateMergeRequest).toHaveBeenCalledWith({"author": "valcriss", "branch": "fix/crash", "mr_id": "mr-99", "project_id": "valcriss", "repo": "valcriss/crashy", "sha": "deadbeef999", "status": "closed"}, "closed")
+    expect(mockDb.updateMergeRequest).toHaveBeenCalledWith(
+      { author: 'valcriss', branch: 'fix/crash', mr_id: 'mr-99', project_id: 'valcriss', repo: 'valcriss/crashy', sha: 'deadbeef999', status: 'closed' },
+      'closed'
+    )
   })
 
   it('log et relance une erreur si une étape échoue (ex: docker down)', async () => {
@@ -60,7 +63,7 @@ describe('StackManager.destroy', () => {
 
     mockDocker.down.mockRejectedValueOnce(new Error('docker down fail'))
 
-    const payload : MergeRequestPayload = {
+    const payload: MergeRequestPayload = {
       project_id: 'valcriss',
       mr_id: 'mr-error',
       status: 'closed',

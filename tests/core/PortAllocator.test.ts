@@ -1,5 +1,7 @@
 import { PortAllocator } from '../../src/core/PortAllocator'
 import db from '../../src/db'
+import { closeConnection } from '../../src/mqtt/MQTTClient'
+import { closeLogger } from '../../src/utils/logger'
 
 jest.mock('../../src/db')
 
@@ -10,20 +12,25 @@ describe('PortAllocator', () => {
     jest.clearAllMocks()
   })
 
-  it('attribue le premier port disponible dans la plage', async () => {
-    mockDb.allreadyAllocatedPort.mockResolvedValueOnce(new Set())
+  afterAll(async () => {
+    await closeConnection()
+    await closeLogger()
+  })
 
-    mockDb.getUsedPorts.mockResolvedValueOnce(new Set([10000,10001]))
+  it('attribue le premier port disponible dans la plage', async () => {
+    mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
+
+    mockDb.getUsedPorts.mockResolvedValueOnce(new Set([10000, 10001]))
 
     const port = await PortAllocator.allocatePort('valcriss', 'mr-1', 'web', 'WEB_PORT', 3000)
 
     expect(port).toEqual(10002)
-    expect(mockDb.addExposedPorts).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO exposed_ports'), expect.arrayContaining(['mr-1', 'web', 3000, port]))
+    expect(mockDb.addExposedPorts).toHaveBeenCalledWith('valcriss', 'mr-1', 'web', 'WEB_PORT', 3000, 10002)
   })
 
   it('ignore les ports déjà utilisés', async () => {
-    mockDb.allreadyAllocatedPort.mockResolvedValueOnce(new Set())
-    mockDb.getUsedPorts.mockResolvedValueOnce(new Set([10000,10001])) // insert sur 10002
+    mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
+    mockDb.getUsedPorts.mockResolvedValueOnce(new Set([10000, 10001])) // insert sur 10002
 
     const port = await PortAllocator.allocatePort('valcriss', 'mr-2', 'api', 'API_PORT', 8000)
     expect(port).toBe(10002)
@@ -31,7 +38,7 @@ describe('PortAllocator', () => {
 
   it('lance une erreur si aucun port libre', async () => {
     // Mock pour allreadyAllocatedPort
-    mockDb.allreadyAllocatedPort.mockResolvedValueOnce(new Set())
+    mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
 
     // Mock pour getUsedPorts
     const used: number[] = []
@@ -43,7 +50,7 @@ describe('PortAllocator', () => {
 
   it('supprime tous les ports d’une MR via releasePorts', async () => {
     await PortAllocator.releasePorts('valcriss', 'mr-123')
-    expect(mockDb.releasePorts).toHaveBeenCalledWith("valcriss", "mr-123")
+    expect(mockDb.releasePorts).toHaveBeenCalledWith('valcriss', 'mr-123')
   })
 
   it('retourne les ports alloués à une MR', async () => {
@@ -58,6 +65,6 @@ describe('PortAllocator', () => {
     const port = await PortAllocator.allocatePort('valcriss', 'mr-4', 'cache', 'CACHE_PORT', 6379)
 
     expect(port).toBe(10005)
-    expect(mockDb.allreadyAllocatedPort).toHaveBeenCalledWith("valcriss", "mr-4", "cache", "CACHE_PORT")
+    expect(mockDb.allreadyAllocatedPort).toHaveBeenCalledWith('valcriss', 'mr-4', 'cache', 'CACHE_PORT')
   })
 })

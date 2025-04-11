@@ -16,9 +16,11 @@ const logger = pino({
       }
 })
 
-export function closeLogger() {
-  logger.flush()
-  logger.removeAllListeners()
+export const closeLogger = async () => {
+  if (logger.flush) {
+    await logger.flush()
+    await logger.removeAllListeners()
+  }
 }
 
 export default logger

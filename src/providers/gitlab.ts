@@ -12,7 +12,7 @@ type GitlabReqBody = {
     author_id: number
   }
   project: {
-    id: string,
+    id: string
     git_http_url: string
   }
 }
