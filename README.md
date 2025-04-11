@@ -13,13 +13,13 @@
 - ✨ **Automatic stack instantiation** on each MR
 - 📚 Configuration via `.instantiate/config.yml` and Docker templates
 - 🌐 GitHub and GitLab webhook integration
-- 🏢 Full stack support (API, DB, Frontend, etc.)
+- 🏢 **(not fully implemented)** Full stack support (API, DB, Frontend, etc.)
 - 📉 Dynamic port allocation with collision prevention
 - 🛠️ Live build and runtime logs
-- ⚡ Healthcheck and status tracking for deployed services
+- ⚡ **(not yet implemented)** Healthcheck and status tracking for deployed services
 - ❌ Automatic teardown when MRs are closed
 - 📰 Coverage report deployment to GitHub Pages
-- 🚀 Async processing via MQTT queue (optional)
+- 🚀 Async processing via MQTT queue
 
 ---
 
