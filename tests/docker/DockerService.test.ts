@@ -13,26 +13,20 @@ describe('DockerService', () => {
   })
 
   it('lance docker-compose up avec les bons arguments', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockedExeca.mockResolvedValueOnce({} as any)
 
     await DockerService.up(path, projectName)
 
-    expect(mockedExeca).toHaveBeenCalledWith(
-      'docker-compose',
-      ['-p', projectName, 'up', '-d'],
-      expect.objectContaining({ cwd: path })
-    )
+    expect(mockedExeca).toHaveBeenCalledWith('docker-compose', ['-p', projectName, 'up', '-d'], expect.objectContaining({ cwd: path }))
   })
 
   it('lance docker-compose down avec les bons arguments', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockedExeca.mockResolvedValueOnce({} as any)
 
     await DockerService.down(path, projectName)
 
-    expect(mockedExeca).toHaveBeenCalledWith(
-      'docker-compose',
-      ['-p', projectName, 'down', '--volumes'],
-      expect.objectContaining({ cwd: path })
-    )
+    expect(mockedExeca).toHaveBeenCalledWith('docker-compose', ['-p', projectName, 'down', '--volumes'], expect.objectContaining({ cwd: path }))
   })
 })

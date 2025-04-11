@@ -7,11 +7,9 @@ import { DockerService } from '../../src/docker/DockerService'
 import db from '../../src/db'
 import { PortAllocator } from '../../src/core/PortAllocator'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
-import { name } from 'mustache'
 import { PathLike, Stats } from 'fs'
-import path from 'path'
-import os from 'os'
-import logger from '../../src/utils/logger'
+import logger, { closeLogger } from '../../src/utils/logger'
+import { closeConnection } from '../../src/mqtt/MQTTClient'
 
 jest.mock('simple-git')
 jest.mock('fs/promises')
@@ -32,7 +30,8 @@ const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
 describe('StackManager.deploy', () => {
   const stackManager = new StackManager()
 
-  const payload = {
+  const payload: MergeRequestPayload = {
+    project_id: 'valcriss',
     mr_id: 'mr-42',
     status: 'open',
     branch: 'feature/test',
@@ -47,33 +46,37 @@ describe('StackManager.deploy', () => {
     jest.clearAllMocks()
   })
 
+  afterAll(async () => {
+    await closeConnection()
+    await closeLogger()
+  })
+
   it('orchestre le déploiement complet d’une MR', async () => {
     // Mock clone
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
     // Mock lecture du fichier YAML
     mockFs.readFile.mockResolvedValueOnce('fake-yaml-content')
     mockYaml.parse.mockReturnValue({
       expose_ports: [
-        { service: 'web', name:'WEB_PORT', port: 3000 },
-        { service: 'api', name:'API_PORT', port: 8000 }
+        { service: 'web', name: 'WEB_PORT', port: 3000 },
+        { service: 'api', name: 'API_PORT', port: 8000 }
       ]
     })
 
     // Mock ports dynamiques
-    mockPorts.allocatePort
-      .mockResolvedValueOnce(10001)
-      .mockResolvedValueOnce(10002)
+    mockPorts.allocatePort.mockResolvedValueOnce(10001).mockResolvedValueOnce(10002)
 
     // Mock template + docker
     mockTemplateEngine.renderToFile.mockResolvedValue()
     mockDocker.up.mockResolvedValue()
     mockFs.stat.mockImplementation(async (filePath: PathLike) => {
-        return {} as Stats; // Simulate file exists
+      return {} as Stats // Simulate file exists
     })
     // Mock DB
-    mockDb.query.mockResolvedValue({ rows: [], command: '', rowCount: 0, oid: 0, fields: [] })
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
 
     // Run
     await stackManager.deploy(payload as MergeRequestPayload, projectKey)
@@ -81,8 +84,8 @@ describe('StackManager.deploy', () => {
     // ✅ Assertions clés
     expect(fakeGit.clone).toHaveBeenCalled()
     expect(mockFs.readFile).toHaveBeenCalled()
-    expect(mockPorts.allocatePort).toHaveBeenCalledWith('mr-42', 'web', 'WEB_PORT', 3000)
-    expect(mockPorts.allocatePort).toHaveBeenCalledWith('mr-42', 'api', 'API_PORT', 8000)
+    expect(mockPorts.allocatePort).toHaveBeenCalledWith('valcriss', 'mr-42', 'web', 'WEB_PORT', 3000)
+    expect(mockPorts.allocatePort).toHaveBeenCalledWith('valcriss', 'mr-42', 'api', 'API_PORT', 8000)
 
     expect(mockTemplateEngine.renderToFile).toHaveBeenCalledWith(
       expect.stringContaining('docker-compose.yml'),
@@ -96,9 +99,9 @@ describe('StackManager.deploy', () => {
     )
 
     expect(mockDocker.up).toHaveBeenCalled()
-    expect(mockDb.query).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO merge_requests'),
-      expect.arrayContaining(['mr-42', 'valcriss/test-repo', 'open'])
+    expect(mockDb.updateMergeRequest).toHaveBeenCalledWith(
+      { author: 'valcriss', branch: 'feature/test', mr_id: 'mr-42', project_id: 'valcriss', repo: 'valcriss/test-repo', sha: 'abcdef123456', status: 'open' },
+      'open'
     )
   })
 
@@ -107,6 +110,7 @@ describe('StackManager.deploy', () => {
 
     // Mock tout comme avant
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
     mockFs.readFile.mockResolvedValueOnce('yaml')
@@ -122,6 +126,7 @@ describe('StackManager.deploy', () => {
     await expect(
       stackManager.deploy(
         {
+          project_id: 'valcriss',
           mr_id: 'mr-crash',
           status: 'open',
           branch: 'broken',
@@ -142,6 +147,7 @@ describe('StackManager.deploy', () => {
 
     // Mock tout comme avant
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
     mockFs.stat.mockImplementation(async (filePath: PathLike) => {
@@ -155,6 +161,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(
       {
+        project_id: 'valcriss',
         mr_id: 'mr-missing-config',
         status: 'open',
         branch: 'missing-config',
@@ -165,11 +172,9 @@ describe('StackManager.deploy', () => {
       'missing-config-project'
     )
 
-    expect(loggerSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Unable to find the configuration file')
-    )
+    expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Unable to find the configuration file'))
     expect(mockDocker.up).not.toHaveBeenCalled()
-    expect(mockDb.query).not.toHaveBeenCalled()
+    expect(mockDb.addExposedPorts).not.toHaveBeenCalled()
 
     loggerSpy.mockRestore()
   })
@@ -179,6 +184,7 @@ describe('StackManager.deploy', () => {
 
     // Mock tout comme avant
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
     mockFs.stat.mockImplementation(async (filePath: PathLike) => {
@@ -192,6 +198,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(
       {
+        project_id: 'valcriss',
         mr_id: 'mr-missing-compose',
         status: 'open',
         branch: 'missing-compose',
@@ -202,12 +209,124 @@ describe('StackManager.deploy', () => {
       'missing-compose-project'
     )
 
-    expect(loggerSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Unable to find the docker-compose file')
-    )
+    expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Unable to find the docker-compose file'))
     expect(mockDocker.up).not.toHaveBeenCalled()
-    expect(mockDb.query).not.toHaveBeenCalled()
+    expect(mockDb.addExposedPorts).not.toHaveBeenCalled()
 
     loggerSpy.mockRestore()
+  })
+})
+
+describe('StackManager environment variables', () => {
+  const originalHostDomain = process.env.HOST_DOMAIN
+  const originalHostScheme = process.env.HOST_SCHEME
+
+  afterEach(() => {
+    process.env.HOST_DOMAIN = originalHostDomain
+    process.env.HOST_SCHEME = originalHostScheme
+  })
+
+  it('should use default values when HOST_DOMAIN and HOST_SCHEME are not set', async () => {
+    delete process.env.HOST_DOMAIN
+    delete process.env.HOST_SCHEME
+
+    const stackManager = new StackManager()
+    const payload: MergeRequestPayload = {
+      project_id: 'test-project',
+      mr_id: 'mr-1',
+      status: 'open',
+      branch: 'main',
+      repo: 'test-repo',
+      sha: '123456',
+      author: 'tester'
+    }
+
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+      return {} as Stats
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+
+    const hostDns = await stackManager.deploy(payload, 'test-key')
+
+    expect(hostDns).toContain('http://localhost')
+  })
+
+  it('should use HOST_DOMAIN when it is set', async () => {
+    process.env.HOST_DOMAIN = 'custom-domain'
+    delete process.env.HOST_SCHEME
+
+    const stackManager = new StackManager()
+    const payload: MergeRequestPayload = {
+      project_id: 'test-project',
+      mr_id: 'mr-1',
+      status: 'open',
+      branch: 'main',
+      repo: 'test-repo',
+      sha: '123456',
+      author: 'tester'
+    }
+
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+      return {} as Stats
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+
+    const hostDns = await stackManager.deploy(payload, 'test-key')
+
+    expect(hostDns).toContain('http://custom-domain')
+  })
+
+  it('should use HOST_SCHEME when it is set', async () => {
+    delete process.env.HOST_DOMAIN
+    process.env.HOST_SCHEME = 'https'
+
+    const stackManager = new StackManager()
+    const payload: MergeRequestPayload = {
+      project_id: 'test-project',
+      mr_id: 'mr-1',
+      status: 'open',
+      branch: 'main',
+      repo: 'test-repo',
+      sha: '123456',
+      author: 'tester'
+    }
+
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+      return {} as Stats
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+
+    const hostDns = await stackManager.deploy(payload, 'test-key')
+
+    expect(hostDns).toContain('https://localhost')
+  })
+
+  it('should use both HOST_DOMAIN and HOST_SCHEME when they are set', async () => {
+    process.env.HOST_DOMAIN = 'custom-domain'
+    process.env.HOST_SCHEME = 'https'
+
+    const stackManager = new StackManager()
+    const payload: MergeRequestPayload = {
+      project_id: 'test-project',
+      mr_id: 'mr-1',
+      status: 'open',
+      branch: 'main',
+      repo: 'test-repo',
+      sha: '123456',
+      author: 'tester'
+    }
+
+    mockFs.stat.mockImplementation(async (filePath: PathLike) => {
+      return {} as Stats
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+
+    const hostDns = await stackManager.deploy(payload, 'test-key')
+
+    expect(hostDns).toContain('https://custom-domain')
   })
 })

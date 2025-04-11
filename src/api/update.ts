@@ -38,13 +38,18 @@ router.post('/update', async (req: any, res: any) => {
 
     res.status(200).json({ success: true })
   } catch (err: unknown) {
-    logger.error('[api] Error handling webhook')
-    res.status(500).json({ error: 'Internal error' })
+    logger.error('[api] Error handling webhook', err)
+    res.status(500).json({ error: 'Internal error', err: (err as Error).message })
   }
 })
 
 function enqueueUpdateEvent(data: { payload: MergeRequestPayload; projectKey: string }) {
-  publishUpdateEvent(data)
+  try {
+    publishUpdateEvent(data)
+  } catch (err) {
+    logger.error('[api] Failed to enqueue update event')
+    throw err
+  }
 }
 
 export default router
