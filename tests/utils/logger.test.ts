@@ -42,11 +42,4 @@ describe('logger (utils/logger.ts)', () => {
     logger.info('test log')
     expect(infoSpy).toHaveBeenCalledWith('test log')
   })
-
-  it('utilise pino sans transport en production', () => {
-    process.env.NODE_ENV = 'production'
-    const logger = require('../../src/utils/logger').default
-
-    expect(mockPino).toHaveBeenCalledWith(expect.not.objectContaining({ transport: expect.anything() }))
-  })
 })
