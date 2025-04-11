@@ -34,6 +34,8 @@
 7. The environment is accessible via `<base-url>:<dynamic-port>` links.
 8. When the MR is closed, the stack is automatically destroyed.
 
+![Workflow](./docs/workflow.svg)
+
 ---
 
 ## Project Structure
