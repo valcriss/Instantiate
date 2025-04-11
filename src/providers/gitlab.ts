@@ -18,7 +18,7 @@ type GitlabReqBody = {
 
 export function parseGitlabWebhook(body: GitlabReqBody): MergeRequestPayload {
   const mr = body.object_attributes
-
+  console.log('Gitlab MR:', body)
   return {
     mr_id: mr.id.toString(),
     status: ['closed', 'merged'].includes(mr.state) ? 'closed' : 'open',
