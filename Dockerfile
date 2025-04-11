@@ -6,11 +6,12 @@ WORKDIR /app
 COPY ./package.json ./package-lock.json /app/
 
 # Installer uniquement les dépendances de production
-RUN npm install --global pm2 && npm ci
+RUN npm install --global pm2 && npm install --global bun && npm ci
 
 # Copier le reste des fichiers nécessaires
 COPY ./dist /app
 COPY ./docker/entrypoint.sh /app/entrypoint.sh
+COPY ./ecosystem.prod.config.js /app/ecosystem.prod.config.js
 
 # Rendre le script d'entrée exécutable
 RUN chmod +x /app/entrypoint.sh
