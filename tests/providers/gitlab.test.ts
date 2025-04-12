@@ -27,11 +27,14 @@ describe('parseGitlabWebhook', () => {
     expect(result).toEqual({
       project_id: 'valcriss',
       mr_id: '54321',
+      mr_iid: '54321',
       status: 'open',
       branch: 'feature/gl-feature',
       repo: 'valcriss/instantiate-gl',
       sha: 'abc123def456',
-      author: '99' // ou 'valcriss' si tu préfères utiliser username dans ton implémentation
+      author: '99',
+      full_name: 'valcriss',
+      provider: 'gitlab'
     })
   })
 
@@ -72,7 +75,7 @@ describe('parseGitlabWebhook', () => {
 
   it('ajoute les informations d’authentification si elles sont définies', () => {
     process.env.REPOSITORY_GITLAB_USERNAME = 'user'
-    process.env.REPOSITORY_GITLAB_PASSWORD = 'pass'
+    process.env.REPOSITORY_GITLAB_TOKEN = 'pass'
 
     const body = {
       object_attributes: {
@@ -95,7 +98,7 @@ describe('parseGitlabWebhook', () => {
     expect(result.repo).toBe('https://user:pass@gitlab.com/test/repo.git')
 
     delete process.env.REPOSITORY_GITLAB_USERNAME
-    delete process.env.REPOSITORY_GITLAB_PASSWORD
+    delete process.env.REPOSITORY_GITLAB_TOKEN
   })
 
   it('remplace localhost par host.docker.internal en mode développement', () => {

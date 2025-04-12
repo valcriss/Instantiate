@@ -33,11 +33,14 @@ describe('db/index.ts', () => {
     const payload: MergeRequestPayload = {
       project_id: '123',
       mr_id: '456',
+      mr_iid: '456',
       repo: 'test-repo',
       status: 'open',
       branch: 'main',
       sha: 'abc123',
-      author: 'test-author'
+      author: 'test-author',
+      full_name: 'test-full-name',
+      provider: 'github'
     }
     const state = 'open'
 

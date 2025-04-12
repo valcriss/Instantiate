@@ -9,6 +9,7 @@ import logger from '../utils/logger'
 import { TemplateEngine } from './TemplateEngine'
 import { DockerService } from '../docker/DockerService'
 import { PortAllocator } from './PortAllocator'
+import { CommentService } from '../comments/CommentService'
 
 export class StackManager {
   async deploy(payload: MergeRequestPayload, projectKey: string) {
@@ -19,10 +20,10 @@ export class StackManager {
     const hostdomain = process.env.HOST_DOMAIN || 'localhost'
     const hostScheme = process.env.HOST_SCHEME || 'http'
     const hostDns = `${hostScheme}://${hostdomain}`
-
+    const commenter = CommentService.getCommenter(payload.provider)
     try {
       logger.info(`[stack] Starting the deployment of the stack for MR #${mrId}`)
-
+      await commenter.postStatusComment(payload, 'in_progress')
       // Nettoyage et préparation dossier temporaire
       await fs.rm(tmpPath, { recursive: true, force: true })
       await fs.mkdir(tmpPath, { recursive: true })
@@ -61,10 +62,12 @@ export class StackManager {
 
       // Préparation des ports dynamiques pour chaque service déclaré
       const ports: Record<string, number> = {}
+      const portsLinks: Record<string, string> = {}
       if (config.expose_ports) {
         for (const entry of config.expose_ports) {
           const port = await PortAllocator.allocatePort(projectId, mrId, entry.service, entry.name, entry.port)
           ports[entry.name] = port
+          portsLinks[entry.service] = `${hostDns}:${port}`
         }
       }
 
@@ -81,7 +84,7 @@ export class StackManager {
 
       // Lancement des containers
       await DockerService.up(tmpPath, `mr-${mrId}`)
-
+      await commenter.postStatusComment(payload, 'ready', portsLinks)
       logger.info(`[stack] Stack for the MR #${mrId} successfully deployed`)
       return hostDns
     } catch (err) {
@@ -94,6 +97,7 @@ export class StackManager {
     const projectId = payload.project_id
     const mrId = payload.mr_id
     const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
+    const commenter = CommentService.getCommenter(payload.provider)
 
     try {
       logger.info(`[stack] Removing of the stack for MR #${mrId}`)
@@ -105,6 +109,7 @@ export class StackManager {
       logger.info(`[stack] Stack for MR #${mrId} successfully removed`)
 
       await fs.rm(tmpPath, { recursive: true, force: true })
+      await commenter.postStatusComment(payload, 'closed')
     } catch (err) {
       logger.error(`[stack] Error during the removal of the stack for MR #${mrId}`)
       throw err

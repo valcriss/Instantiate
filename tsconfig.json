@@ -8,7 +8,9 @@
     "strict": true,
     "skipLibCheck": true,
     "types": ["node", "express", "jest"],
-    "typeRoots": ["./node_modules/@types"]
+    "typeRoots": ["./node_modules/@types"],
+    "allowSyntheticDefaultImports": true
+
   },
   "include": ["src"],
   "exclude": ["node_modules", "tests"]

@@ -17,14 +17,17 @@ const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
 describe('StackManager.destroy', () => {
   const stackManager = new StackManager()
 
-  const payload = {
+  const payload: MergeRequestPayload = {
     project_id: 'valcriss',
     mr_id: 'mr-99',
+    mr_iid: 'mr-99',
     status: 'closed',
     branch: 'fix/crash',
     repo: 'valcriss/crashy',
     sha: 'deadbeef999',
-    author: 'valcriss'
+    author: 'valcriss',
+    full_name: 'valcriss/crashy',
+    provider: 'github'
   }
 
   const projectKey = 'destroy-test'
@@ -39,6 +42,7 @@ describe('StackManager.destroy', () => {
   })
 
   it('supprime la stack et libère les ports', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
     mockDocker.down.mockResolvedValue()
     mockPorts.releasePorts.mockResolvedValue()
     mockDb.releasePorts.mockResolvedValue()
@@ -53,12 +57,24 @@ describe('StackManager.destroy', () => {
 
     // ✅ Vérifie la mise à jour en base
     expect(mockDb.updateMergeRequest).toHaveBeenCalledWith(
-      { author: 'valcriss', branch: 'fix/crash', mr_id: 'mr-99', project_id: 'valcriss', repo: 'valcriss/crashy', sha: 'deadbeef999', status: 'closed' },
+      {
+        author: 'valcriss',
+        full_name: 'valcriss/crashy',
+        provider: 'github',
+        branch: 'fix/crash',
+        mr_id: 'mr-99',
+        mr_iid: 'mr-99',
+        project_id: 'valcriss',
+        repo: 'valcriss/crashy',
+        sha: 'deadbeef999',
+        status: 'closed'
+      },
       'closed'
     )
   })
 
   it('log et relance une erreur si une étape échoue (ex: docker down)', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
     const stackManager = new StackManager()
 
     mockDocker.down.mockRejectedValueOnce(new Error('docker down fail'))
@@ -66,11 +82,14 @@ describe('StackManager.destroy', () => {
     const payload: MergeRequestPayload = {
       project_id: 'valcriss',
       mr_id: 'mr-error',
+      mr_iid: 'mr-error',
       status: 'closed',
       branch: 'hotfix',
       repo: 'valcriss/downfail',
       sha: 'failsha',
-      author: 'failbot'
+      author: 'failbot',
+      full_name: 'valcriss/failrepo',
+      provider: 'github'
     }
 
     await expect(stackManager.destroy(payload as MergeRequestPayload, 'key')).rejects.toThrow('docker down fail')

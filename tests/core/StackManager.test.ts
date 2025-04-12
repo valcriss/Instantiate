@@ -33,11 +33,14 @@ describe('StackManager.deploy', () => {
   const payload: MergeRequestPayload = {
     project_id: 'valcriss',
     mr_id: 'mr-42',
+    mr_iid: 'mr-42',
     status: 'open',
     branch: 'feature/test',
     repo: 'valcriss/test-repo',
     sha: 'abcdef123456',
-    author: 'valcriss'
+    author: 'valcriss',
+    full_name: 'valcriss/test-repo',
+    provider: 'github'
   }
 
   const projectKey = 'test-project'
@@ -52,6 +55,7 @@ describe('StackManager.deploy', () => {
   })
 
   it('orchestre le déploiement complet d’une MR', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
     // Mock clone
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -100,14 +104,25 @@ describe('StackManager.deploy', () => {
 
     expect(mockDocker.up).toHaveBeenCalled()
     expect(mockDb.updateMergeRequest).toHaveBeenCalledWith(
-      { author: 'valcriss', branch: 'feature/test', mr_id: 'mr-42', project_id: 'valcriss', repo: 'valcriss/test-repo', sha: 'abcdef123456', status: 'open' },
+      {
+        author: 'valcriss',
+        full_name: 'valcriss/test-repo',
+        provider: 'github',
+        branch: 'feature/test',
+        mr_id: 'mr-42',
+        mr_iid: 'mr-42',
+        project_id: 'valcriss',
+        repo: 'valcriss/test-repo',
+        sha: 'abcdef123456',
+        status: 'open'
+      },
       'open'
     )
   })
 
   it('log et relance une erreur si une étape échoue (ex: substitution template)', async () => {
     const stackManager = new StackManager()
-
+    delete process.env.REPOSITORY_GITHUB_TOKEN
     // Mock tout comme avant
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -128,11 +143,14 @@ describe('StackManager.deploy', () => {
         {
           project_id: 'valcriss',
           mr_id: 'mr-crash',
+          mr_iid: 'mr-crash',
           status: 'open',
           branch: 'broken',
           repo: 'valcriss/crash',
           sha: 'deadbeef',
-          author: 'tester'
+          author: 'tester',
+          full_name: 'valcriss/crash',
+          provider: 'github'
         },
         'fail-project'
       )
@@ -144,7 +162,7 @@ describe('StackManager.deploy', () => {
 
   it('log un avertissement et retourne si le fichier config.yml est manquant', async () => {
     const stackManager = new StackManager()
-
+    delete process.env.REPOSITORY_GITHUB_TOKEN
     // Mock tout comme avant
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -163,11 +181,14 @@ describe('StackManager.deploy', () => {
       {
         project_id: 'valcriss',
         mr_id: 'mr-missing-config',
+        mr_iid: 'mr-missing-config',
         status: 'open',
         branch: 'missing-config',
         repo: 'valcriss/missing-config',
         sha: 'deadbeef',
-        author: 'tester'
+        author: 'tester',
+        full_name: 'valcriss/missing-config',
+        provider: 'github'
       },
       'missing-config-project'
     )
@@ -181,7 +202,7 @@ describe('StackManager.deploy', () => {
 
   it('log un avertissement et retourne si le fichier docker-compose.yml est manquant', async () => {
     const stackManager = new StackManager()
-
+    delete process.env.REPOSITORY_GITHUB_TOKEN
     // Mock tout comme avant
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -200,11 +221,14 @@ describe('StackManager.deploy', () => {
       {
         project_id: 'valcriss',
         mr_id: 'mr-missing-compose',
+        mr_iid: 'mr-missing-compose',
         status: 'open',
         branch: 'missing-compose',
         repo: 'valcriss/missing-compose',
         sha: 'deadbeef',
-        author: 'tester'
+        author: 'tester',
+        full_name: 'valcriss/missing-compose',
+        provider: 'github'
       },
       'missing-compose-project'
     )
@@ -229,16 +253,19 @@ describe('StackManager environment variables', () => {
   it('should use default values when HOST_DOMAIN and HOST_SCHEME are not set', async () => {
     delete process.env.HOST_DOMAIN
     delete process.env.HOST_SCHEME
-
+    delete process.env.REPOSITORY_GITHUB_TOKEN
     const stackManager = new StackManager()
     const payload: MergeRequestPayload = {
       project_id: 'test-project',
       mr_id: 'mr-1',
+      mr_iid: 'mr-1',
       status: 'open',
       branch: 'main',
       repo: 'test-repo',
       sha: '123456',
-      author: 'tester'
+      author: 'tester',
+      full_name: 'test-repo/test-repo',
+      provider: 'github'
     }
 
     mockFs.stat.mockImplementation(async (filePath: PathLike) => {
@@ -253,6 +280,7 @@ describe('StackManager environment variables', () => {
   })
 
   it('should use HOST_DOMAIN when it is set', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
     process.env.HOST_DOMAIN = 'custom-domain'
     delete process.env.HOST_SCHEME
 
@@ -260,11 +288,14 @@ describe('StackManager environment variables', () => {
     const payload: MergeRequestPayload = {
       project_id: 'test-project',
       mr_id: 'mr-1',
+      mr_iid: 'mr-1',
       status: 'open',
       branch: 'main',
       repo: 'test-repo',
       sha: '123456',
-      author: 'tester'
+      author: 'tester',
+      full_name: 'test-repo/test-repo',
+      provider: 'github'
     }
 
     mockFs.stat.mockImplementation(async (filePath: PathLike) => {
@@ -280,17 +311,21 @@ describe('StackManager environment variables', () => {
 
   it('should use HOST_SCHEME when it is set', async () => {
     delete process.env.HOST_DOMAIN
+    delete process.env.REPOSITORY_GITHUB_TOKEN
     process.env.HOST_SCHEME = 'https'
 
     const stackManager = new StackManager()
     const payload: MergeRequestPayload = {
       project_id: 'test-project',
       mr_id: 'mr-1',
+      mr_iid: 'mr-1',
       status: 'open',
       branch: 'main',
       repo: 'test-repo',
       sha: '123456',
-      author: 'tester'
+      author: 'tester',
+      full_name: 'test-repo/test-repo',
+      provider: 'github'
     }
 
     mockFs.stat.mockImplementation(async (filePath: PathLike) => {
@@ -305,6 +340,7 @@ describe('StackManager environment variables', () => {
   })
 
   it('should use both HOST_DOMAIN and HOST_SCHEME when they are set', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
     process.env.HOST_DOMAIN = 'custom-domain'
     process.env.HOST_SCHEME = 'https'
 
@@ -312,11 +348,14 @@ describe('StackManager environment variables', () => {
     const payload: MergeRequestPayload = {
       project_id: 'test-project',
       mr_id: 'mr-1',
+      mr_iid: 'mr-1',
       status: 'open',
       branch: 'main',
-      repo: 'test-repo',
+      repo: 'test-repo/repo',
       sha: '123456',
-      author: 'tester'
+      author: 'tester',
+      full_name: 'test-repo/repo',
+      provider: 'github'
     }
 
     mockFs.stat.mockImplementation(async (filePath: PathLike) => {

@@ -3,6 +3,7 @@ import { MergeRequestPayload } from '../types/MergeRequestPayload'
 type GithubReqBody = {
   pull_request: {
     id: number
+    number: number
     head: {
       ref: string
       sha: string
@@ -13,6 +14,7 @@ type GithubReqBody = {
   }
   action: string
   repository: {
+    full_name: string
     clone_url: string
     id: string
   }
@@ -22,8 +24,8 @@ export function parseGithubWebhook(body: GithubReqBody): MergeRequestPayload {
   const pr = body.pull_request
   let authentification = null
   let url = body.repository.clone_url
-  if (process.env.REPOSITORY_GITHUB_USERNAME && process.env.REPOSITORY_GITHUB_PASSWORD) {
-    authentification = `${process.env.REPOSITORY_GITHUB_USERNAME}:${process.env.REPOSITORY_GITHUB_PASSWORD}`
+  if (process.env.REPOSITORY_GITHUB_USERNAME && process.env.REPOSITORY_GITHUB_TOKEN) {
+    authentification = `${process.env.REPOSITORY_GITHUB_USERNAME}:${process.env.REPOSITORY_GITHUB_TOKEN}`
   }
   if (process.env.NODE_ENV === 'development') {
     url = url.replace('localhost', 'host.docker.internal')
@@ -35,10 +37,13 @@ export function parseGithubWebhook(body: GithubReqBody): MergeRequestPayload {
   return {
     project_id: body.repository.id,
     mr_id: pr.id.toString(),
+    mr_iid: pr.number.toString(),
+    full_name: body.repository.full_name,
     status: body.action === 'closed' ? 'closed' : 'open',
     branch: pr.head.ref,
     repo: url,
     sha: pr.head.sha,
-    author: pr.user.login
+    author: pr.user.login,
+    provider: 'github'
   }
 }

@@ -30,11 +30,14 @@ describe('MQTTClient', () => {
       const payload: MergeRequestPayload = {
         project_id: 'test-project',
         mr_id: 'mr-1',
+        mr_iid: 'mr-1',
         status: 'open',
         branch: 'main',
         repo: 'test-repo',
         sha: '123456',
-        author: 'tester'
+        author: 'tester',
+        full_name: 'tester/test-repo',
+        provider: 'github'
       }
       const projectKey = 'test-project'
 
@@ -51,11 +54,14 @@ describe('MQTTClient', () => {
       const payload: MergeRequestPayload = {
         project_id: 'test-project',
         mr_id: 'mr-1',
+        mr_iid: 'mr-1',
         status: 'open',
         branch: 'main',
         repo: 'test-repo',
         sha: '123456',
-        author: 'tester'
+        author: 'tester',
+        full_name: 'tester/test-repo',
+        provider: 'github'
       }
       const projectKey = 'test-project'
 

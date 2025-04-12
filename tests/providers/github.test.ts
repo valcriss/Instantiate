@@ -7,6 +7,7 @@ describe('parseGithubWebhook', () => {
       action: 'opened',
       pull_request: {
         id: 123456,
+        number: 456,
         head: {
           ref: 'feature/awesome-feature',
           sha: 'abcdef123456'
@@ -17,6 +18,7 @@ describe('parseGithubWebhook', () => {
       },
       repository: {
         id: 'valcriss',
+        full_name: 'valcriss/instantiate-demo',
         clone_url: 'valcriss/instantiate-demo'
       }
     }
@@ -26,11 +28,14 @@ describe('parseGithubWebhook', () => {
     expect(result).toEqual({
       project_id: 'valcriss',
       mr_id: '123456',
+      mr_iid: '456',
       status: 'open',
+      full_name: 'valcriss/instantiate-demo',
       branch: 'feature/awesome-feature',
       repo: 'valcriss/instantiate-demo',
       sha: 'abcdef123456',
-      author: 'valcriss'
+      author: 'valcriss',
+      provider: 'github'
     })
   })
 
@@ -39,6 +44,7 @@ describe('parseGithubWebhook', () => {
       action: 'closed',
       pull_request: {
         id: 987654,
+        number: 456,
         head: {
           ref: 'bugfix/fix-typo',
           sha: 'deadbeef987654'
@@ -49,6 +55,7 @@ describe('parseGithubWebhook', () => {
       },
       repository: {
         id: '123456',
+        full_name: 'octo/test',
         clone_url: 'octo/test'
       }
     }
@@ -61,12 +68,13 @@ describe('parseGithubWebhook', () => {
 
   it('ajoute les informations d’authentification si elles sont définies', () => {
     process.env.REPOSITORY_GITHUB_USERNAME = 'user'
-    process.env.REPOSITORY_GITHUB_PASSWORD = 'pass'
+    process.env.REPOSITORY_GITHUB_TOKEN = 'pass'
 
     const body = {
       action: 'opened',
       pull_request: {
         id: 123,
+        number: 456,
         head: {
           ref: 'feature/test',
           sha: 'sha123'
@@ -77,6 +85,7 @@ describe('parseGithubWebhook', () => {
       },
       repository: {
         id: 'repo123',
+        full_name: 'test/repo',
         clone_url: 'https://github.com/test/repo.git'
       }
     }
@@ -86,7 +95,7 @@ describe('parseGithubWebhook', () => {
     expect(result.repo).toBe('https://user:pass@github.com/test/repo.git')
 
     delete process.env.REPOSITORY_GITHUB_USERNAME
-    delete process.env.REPOSITORY_GITHUB_PASSWORD
+    delete process.env.REPOSITORY_GITHUB_TOKEN
   })
 
   it('remplace localhost par host.docker.internal en mode développement', () => {
@@ -96,6 +105,7 @@ describe('parseGithubWebhook', () => {
       action: 'opened',
       pull_request: {
         id: 456,
+        number: 456,
         head: {
           ref: 'feature/docker',
           sha: 'sha456'
@@ -106,6 +116,7 @@ describe('parseGithubWebhook', () => {
       },
       repository: {
         id: 'repo456',
+        full_name: 'test/repo',
         clone_url: 'http://localhost/test/repo.git'
       }
     }

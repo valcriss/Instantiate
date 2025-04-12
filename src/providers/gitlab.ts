@@ -21,8 +21,8 @@ export function parseGitlabWebhook(body: GitlabReqBody): MergeRequestPayload {
   const mr = body.object_attributes
   let authentification = null
   let url = body.project.git_http_url
-  if (process.env.REPOSITORY_GITLAB_USERNAME && process.env.REPOSITORY_GITLAB_PASSWORD) {
-    authentification = `${process.env.REPOSITORY_GITLAB_USERNAME}:${process.env.REPOSITORY_GITLAB_PASSWORD}`
+  if (process.env.REPOSITORY_GITLAB_USERNAME && process.env.REPOSITORY_GITLAB_TOKEN) {
+    authentification = `${process.env.REPOSITORY_GITLAB_USERNAME}:${process.env.REPOSITORY_GITLAB_TOKEN}`
   }
   if (process.env.NODE_ENV === 'development') {
     url = url.replace('localhost', 'host.docker.internal')
@@ -34,10 +34,13 @@ export function parseGitlabWebhook(body: GitlabReqBody): MergeRequestPayload {
   return {
     project_id: body.project.id,
     mr_id: mr.id.toString(),
+    mr_iid: mr.id.toString(),
+    full_name: body.project.id,
     status: ['closed', 'merged'].includes(mr.state) ? 'closed' : 'open',
     branch: mr.source_branch,
     repo: url,
     sha: mr.last_commit.id,
-    author: mr.author_id.toString()
+    author: mr.author_id.toString(),
+    provider: 'gitlab'
   }
 }
