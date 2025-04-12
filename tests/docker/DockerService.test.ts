@@ -19,8 +19,8 @@ describe('DockerService', () => {
     await DockerService.up(path, projectName)
 
     expect(mockedExeca).toHaveBeenCalledWith(
-      'docker',
-      ['compose', '-p', projectName, 'up', '-d', '--force-recreate', '--build'],
+      'docker-compose',
+      ['-p', projectName, 'up', '-d', '--force-recreate', '--build'],
       expect.objectContaining({ cwd: path })
     )
   })
@@ -31,6 +31,6 @@ describe('DockerService', () => {
 
     await DockerService.down(path, projectName)
 
-    expect(mockedExeca).toHaveBeenCalledWith('docker', ['compose', '-p', projectName, 'down', '--volumes'], expect.objectContaining({ cwd: path }))
+    expect(mockedExeca).toHaveBeenCalledWith('docker-compose', ['-p', projectName, 'down', '--volumes'], expect.objectContaining({ cwd: path }))
   })
 })

@@ -5,7 +5,7 @@ export class DockerService {
     const { execa } = await import('execa')
     logger.info(`[docker] Stack up: ${projectName}`)
 
-    const subprocess = execa('docker', ['compose', '-p', projectName, 'up', '-d', '--force-recreate', '--build'], {
+    const subprocess = execa('docker-compose', ['-p', projectName, 'up', '-d', '--force-recreate', '--build'], {
       cwd: stackPath
     })
 
@@ -14,7 +14,7 @@ export class DockerService {
     })
 
     subprocess.stderr?.on('data', (data) => {
-      logger.error(`[docker:stderr] ${data.toString().trim()}`)
+      logger.info(`[docker:stderr] ${data.toString().trim()}`)
     })
 
     await subprocess
@@ -24,7 +24,7 @@ export class DockerService {
     const { execa } = await import('execa')
     logger.info(`[docker] Stack down: ${projectName}`)
 
-    const subprocess = execa('docker', ['compose', '-p', projectName, 'down', '--volumes'], {
+    const subprocess = execa('docker-compose', ['-p', projectName, 'down', '--volumes'], {
       cwd: stackPath
     })
 
@@ -33,7 +33,7 @@ export class DockerService {
     })
 
     subprocess.stderr?.on('data', (data) => {
-      logger.error(`[docker:stderr] ${data.toString().trim()}`)
+      logger.info(`[docker:stderr] ${data.toString().trim()}`)
     })
 
     await subprocess
