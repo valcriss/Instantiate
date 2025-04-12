@@ -43,7 +43,7 @@ router.post('/update', async (req: any, res: any) => {
   }
 })
 
-function enqueueUpdateEvent(data: { payload: MergeRequestPayload; projectKey: string }) {
+export function enqueueUpdateEvent(data: { payload: MergeRequestPayload; projectKey: string }) {
   try {
     ensureMQTTClientIsInitialized()
     publishUpdateEvent(data)

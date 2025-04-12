@@ -58,4 +58,62 @@ describe('parseGithubWebhook', () => {
     expect(result.status).toBe('closed')
     expect(result.mr_id).toBe('987654')
   })
+
+  it('ajoute les informations d’authentification si elles sont définies', () => {
+    process.env.REPOSITORY_GITHUB_USERNAME = 'user'
+    process.env.REPOSITORY_GITHUB_PASSWORD = 'pass'
+
+    const body = {
+      action: 'opened',
+      pull_request: {
+        id: 123,
+        head: {
+          ref: 'feature/test',
+          sha: 'sha123'
+        },
+        user: {
+          login: 'testuser'
+        }
+      },
+      repository: {
+        id: 'repo123',
+        clone_url: 'https://github.com/test/repo.git'
+      }
+    }
+
+    const result = parseGithubWebhook(body)
+
+    expect(result.repo).toBe('https://user:pass@github.com/test/repo.git')
+
+    delete process.env.REPOSITORY_GITHUB_USERNAME
+    delete process.env.REPOSITORY_GITHUB_PASSWORD
+  })
+
+  it('remplace localhost par host.docker.internal en mode développement', () => {
+    process.env.NODE_ENV = 'development'
+
+    const body = {
+      action: 'opened',
+      pull_request: {
+        id: 456,
+        head: {
+          ref: 'feature/docker',
+          sha: 'sha456'
+        },
+        user: {
+          login: 'dockeruser'
+        }
+      },
+      repository: {
+        id: 'repo456',
+        clone_url: 'http://localhost/test/repo.git'
+      }
+    }
+
+    const result = parseGithubWebhook(body)
+
+    expect(result.repo).toBe('http://host.docker.internal/test/repo.git')
+
+    delete process.env.NODE_ENV
+  })
 })

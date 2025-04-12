@@ -7,6 +7,9 @@ import { StackManager } from '../../src/core/StackManager'
 import { closeConnection } from '../../src/mqtt/MQTTClient'
 import { closeLogger } from '../../src/utils/logger'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
+import { enqueueUpdateEvent } from '../../src/api/update'
+import logger from '../../src/utils/logger'
+import { ensureMQTTClientIsInitialized, publishUpdateEvent } from '../../src/mqtt/MQTTClient'
 
 jest.mock('../../src/providers/github')
 jest.mock('../../src/providers/gitlab')
@@ -98,5 +101,24 @@ describe('POST /api/update', () => {
 
     expect(res.status).toBe(500)
     expect(res.body.error).toMatch(/Internal error/)
+  })
+
+  describe('enqueueUpdateEvent', () => {
+    it("log l'erreur et relance l'exception si l'enqueue échoue", () => {
+      const loggerSpy = jest.spyOn(logger, 'error')
+      jest.spyOn(require('../../src/mqtt/MQTTClient'), 'ensureMQTTClientIsInitialized').mockImplementation(() => {})
+      jest.spyOn(require('../../src/mqtt/MQTTClient'), 'publishUpdateEvent').mockImplementation(() => {
+        throw new Error("Erreur d'enqueue simulée")
+      })
+
+      expect(() => {
+        enqueueUpdateEvent({
+          payload: { project_id: 'valcriss', branch: 'test', repo: 'repo', sha: 'sha', author: 'author', mr_id: '123', status: 'open' },
+          projectKey: 'test-key'
+        })
+      }).toThrow("Erreur d'enqueue simulée")
+
+      expect(loggerSpy).toHaveBeenCalledWith('[api] Failed to enqueue update event')
+    })
   })
 })

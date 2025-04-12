@@ -19,7 +19,6 @@ export function initializeMQTTWorker(brokerUrl: string = process.env.MQTT_BROKER
 
   client.on('message', async (topic, message) => {
     try {
-      console.log('Received message:', message.toString())
       const { payload, projectKey } = JSON.parse(message.toString())
 
       const stackManager = new StackManager()

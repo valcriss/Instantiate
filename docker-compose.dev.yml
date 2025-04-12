@@ -18,7 +18,7 @@ services:
       # - LOG_LEVEL=info      
       - HOST_DOMAIN=localhost
       - HOST_SCHEME=http
-      # - REPOSITORY_GITLAB_USERNAME=root
+      # - REPOSITORY_GITLAB_USERNAME=username
       # - REPOSITORY_GITLAB_PASSWORD=token
       # - REPOSITORY_GITHUB_USERNAME=username 
       # - REPOSITORY_GITHUB_TOKEN=token

@@ -26,6 +26,27 @@ describe('MQTTClient', () => {
   })
 
   describe('publishUpdateEvent', () => {
+    it('should initialize the MQTT client if not already initialized', () => {
+      const payload: MergeRequestPayload = {
+        project_id: 'test-project',
+        mr_id: 'mr-1',
+        status: 'open',
+        branch: 'main',
+        repo: 'test-repo',
+        sha: '123456',
+        author: 'tester'
+      }
+      const projectKey = 'test-project'
+
+      // Reset the client to undefined to simulate uninitialized state
+      ;(mqtt.connect as jest.Mock).mockClear()
+      closeConnection()
+      publishUpdateEvent({ payload, projectKey })
+
+      expect(mqtt.connect).toHaveBeenCalled()
+      expect(mockClient.publish).toHaveBeenCalledWith('instantiate/update', JSON.stringify({ payload, projectKey }))
+    })
+
     it('should publish the update event with the correct topic and payload', () => {
       const payload: MergeRequestPayload = {
         project_id: 'test-project',

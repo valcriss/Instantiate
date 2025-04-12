@@ -69,4 +69,58 @@ describe('parseGitlabWebhook', () => {
     expect(closedResult.status).toBe('closed')
     expect(mergedResult.status).toBe('closed')
   })
+
+  it('ajoute les informations d’authentification si elles sont définies', () => {
+    process.env.REPOSITORY_GITLAB_USERNAME = 'user'
+    process.env.REPOSITORY_GITLAB_PASSWORD = 'pass'
+
+    const body = {
+      object_attributes: {
+        id: 123,
+        state: 'opened',
+        source_branch: 'feature/test',
+        last_commit: {
+          id: 'sha123'
+        },
+        author_id: 42
+      },
+      project: {
+        id: 'repo123',
+        git_http_url: 'https://gitlab.com/test/repo.git'
+      }
+    }
+
+    const result = parseGitlabWebhook(body)
+
+    expect(result.repo).toBe('https://user:pass@gitlab.com/test/repo.git')
+
+    delete process.env.REPOSITORY_GITLAB_USERNAME
+    delete process.env.REPOSITORY_GITLAB_PASSWORD
+  })
+
+  it('remplace localhost par host.docker.internal en mode développement', () => {
+    process.env.NODE_ENV = 'development'
+
+    const body = {
+      object_attributes: {
+        id: 456,
+        state: 'opened',
+        source_branch: 'feature/docker',
+        last_commit: {
+          id: 'sha456'
+        },
+        author_id: 99
+      },
+      project: {
+        id: 'repo456',
+        git_http_url: 'http://localhost/test/repo.git'
+      }
+    }
+
+    const result = parseGitlabWebhook(body)
+
+    expect(result.repo).toBe('http://host.docker.internal/test/repo.git')
+
+    delete process.env.NODE_ENV
+  })
 })

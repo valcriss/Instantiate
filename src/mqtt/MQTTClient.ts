@@ -2,7 +2,7 @@ import mqtt, { MqttClient } from 'mqtt'
 import logger from '../utils/logger'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 
-let client: MqttClient
+let client: MqttClient | null = null
 
 export function ensureMQTTClientIsInitialized() {
   if (!client) {
@@ -29,7 +29,7 @@ export function publishUpdateEvent(data: { payload: MergeRequestPayload; project
   if (!client) {
     initializeMQTTClient()
   }
-  client.publish('instantiate/update', JSON.stringify(data))
+  client?.publish('instantiate/update', JSON.stringify(data))
 }
 
 export async function closeConnection() {
@@ -37,11 +37,12 @@ export async function closeConnection() {
     return Promise.resolve(undefined)
   }
   return new Promise((resolve, reject) => {
-    client.end(false, {}, (err) => {
+    client?.end(false, {}, (err) => {
       if (err) {
         logger.error('[mqtt-client] Error closing connection:', err)
         return reject(err)
       }
+      client = null
       logger.info('[mqtt-client] Connection closed')
       resolve(undefined)
     })
