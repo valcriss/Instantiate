@@ -48,7 +48,7 @@ describe('MQTTClient', () => {
     it('should close the MQTT connection successfully', async () => {
       await expect(closeConnection()).resolves.toBeUndefined()
       expect(mockClient.end).toHaveBeenCalledWith(false, {}, expect.any(Function))
-      expect(logger.info).toHaveBeenCalledWith('[mqtt] Connection closed')
+      expect(logger.info).toHaveBeenCalledWith('[mqtt-client] Connection closed')
     })
 
     it('should log an error if closing the connection fails', async () => {
@@ -57,7 +57,7 @@ describe('MQTTClient', () => {
       mockClient.end = jest.fn((force: boolean, options: any, callback: (err?: Error) => void) => callback(error))
 
       await expect(closeConnection()).rejects.toThrow('Close connection error')
-      expect(logger.error).toHaveBeenCalledWith('[mqtt] Error closing connection:', error)
+      expect(logger.error).toHaveBeenCalledWith('[mqtt-client] Error closing connection:', error)
     })
   })
 
@@ -67,7 +67,7 @@ describe('MQTTClient', () => {
       const connectCallback: () => void = mockClient.on.mock.calls.find((call: [string, (...args: any[]) => void]) => call[0] === 'connect')[1] as () => void
       connectCallback()
 
-      expect(logger.info).toHaveBeenCalledWith('[mqtt] Connected to broker')
+      expect(logger.info).toHaveBeenCalledWith('[mqtt-client] Connected to broker')
     })
 
     it('should log an error message when an error occurs', () => {
@@ -78,7 +78,7 @@ describe('MQTTClient', () => {
       const error = new Error('Test error')
       errorCallback(error)
 
-      expect(logger.info).toHaveBeenCalledWith('[mqtt] Error:', error.message)
+      expect(logger.info).toHaveBeenCalledWith('[mqtt-client] Error:', error.message)
     })
   })
 })

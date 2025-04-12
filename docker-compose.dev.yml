@@ -1,16 +1,54 @@
+#--------------------------------------------------------------------------------------#
+# Docker Compose file for development Instantiate Service
+#--------------------------------------------------------------------------------------#
 services:
+#--------------------------------------------------------------------------------------#
+# Instantiate service
+#--------------------------------------------------------------------------------------#
+  instantiate:
+    build: .
+    container_name: instantiate
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - //var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - NODE_ENV=development
+      # - LOG_LEVEL=info      
+      - HOST_DOMAIN=localhost
+      - HOST_SCHEME=http
+      # - REPOSITORY_GITLAB_USERNAME=username
+      # - REPOSITORY_GITLAB_PASSWORD=token
+      # - REPOSITORY_GITHUB_USERNAME=username
+      # - REPOSITORY_GITHUB_TOKEN=token
+      - DATABASE_URL=postgresql://instantiate:instantiate@database:5432/instantiate
+      - MQTT_BROKER_URL=mqtt://broker:1883
+    depends_on:
+      database:
+        condition: service_healthy
+
   database:
-    image: postgres:15
-    container_name: instantiate_database
+    image: postgres:latest
+    container_name: database
     restart: unless-stopped
     environment:
-      POSTGRES_DB: instantiate
-      POSTGRES_USER: instantiate
-      POSTGRES_PASSWORD: instantiate
-    ports:
-      - "5432:5432"
+      - POSTGRES_USER=instantiate
+      - POSTGRES_PASSWORD=instantiate
+      - POSTGRES_DB=instantiate
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  broker:
+    image: emqx/nanomq:latest
+    container_name: broker
+    restart: unless-stopped
 
 volumes:
-  pgdata:
+  db_data:
+    driver: local

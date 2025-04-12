@@ -1,4 +1,5 @@
 #!/bin/sh
-set -e
-pm2 start ./ecosystem.prod.config.js
-node server.js
+cd /app
+npm run build
+npm run migrate:up
+exec pm2-runtime ./ecosystem.prod.config.js
