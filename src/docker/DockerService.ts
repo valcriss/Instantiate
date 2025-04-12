@@ -3,29 +3,39 @@ import logger from '../utils/logger'
 export class DockerService {
   static async up(stackPath: string, projectName: string): Promise<void> {
     const { execa } = await import('execa')
-    logger.info(`[docker] Stack started : ${projectName}`)
-    await execa('docker-compose', ['-p', projectName, 'up', '-d', '--force-recreate', '--build'], {
-      cwd: stackPath,
-      stdout: function* (line: string | Uint8Array | unknown) {
-        logger.info(`[docker]${line}`)
-      },
-      stderr: function* (line: string | Uint8Array | unknown) {
-        logger.info(`[docker]${line}`)
-      }
+    logger.info(`[docker] Stack up: ${projectName}`)
+
+    const subprocess = execa('docker', ['compose', '-p', projectName, 'up', '-d', '--force-recreate', '--build'], {
+      cwd: stackPath
     })
+
+    subprocess.stdout?.on('data', (data) => {
+      logger.info(`[docker:stdout] ${data.toString().trim()}`)
+    })
+
+    subprocess.stderr?.on('data', (data) => {
+      logger.error(`[docker:stderr] ${data.toString().trim()}`)
+    })
+
+    await subprocess
   }
 
   static async down(stackPath: string, projectName: string): Promise<void> {
     const { execa } = await import('execa')
-    logger.info(`[docker] Stack down : ${projectName}`)
-    await execa('docker-compose', ['-p', projectName, 'down', '--volumes'], {
-      cwd: stackPath,
-      stdout: function* (line: string | Uint8Array | unknown) {
-        logger.info(`[docker]${line}`)
-      },
-      stderr: function* (line: string | Uint8Array | unknown) {
-        logger.info(`[docker]${line}`)
-      }
+    logger.info(`[docker] Stack down: ${projectName}`)
+
+    const subprocess = execa('docker', ['compose', '-p', projectName, 'down', '--volumes'], {
+      cwd: stackPath
     })
+
+    subprocess.stdout?.on('data', (data) => {
+      logger.info(`[docker:stdout] ${data.toString().trim()}`)
+    })
+
+    subprocess.stderr?.on('data', (data) => {
+      logger.error(`[docker:stderr] ${data.toString().trim()}`)
+    })
+
+    await subprocess
   }
 }
