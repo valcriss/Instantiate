@@ -13,7 +13,7 @@
 - ✨ **Automatic stack instantiation** on each MR
 - 📚 Configuration via `.instantiate/config.yml` and Docker templates
 - 🌐 GitHub and GitLab webhook integration
-- 🏢 **(not fully implemented)** Full stack support (API, DB, Frontend, etc.)
+- 🏢 Full stack support (API, DB, etc.)
 - 📉 Dynamic port allocation with collision prevention
 - 🛠️ Live build and runtime logs
 - ⚡ **(not yet implemented)** Healthcheck and status tracking for deployed services
@@ -30,7 +30,7 @@
 3. Instantiate reads the `.instantiate/config.yml` and `.instantiate/docker-compose.yml` templates.
 4. A new environment is created using Docker.
 5. Dynamic ports are assigned to avoid conflicts.
-6. **work in progress** A comment is added to the merge request with Instantiate links 
+6. A comment is added to the merge request with Instantiate links 
 7. The environment is accessible via `<base-url>:<dynamic-port>` links.
 8. When the MR is closed, the stack is automatically destroyed.
 
