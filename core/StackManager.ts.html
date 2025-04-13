@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>74/74</span>
+                <span class='fraction'>77/77</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>74/74</span>
+                <span class='fraction'>77/77</span>
             </div>
         
             
@@ -181,12 +181,28 @@
 <a name='L116'></a><a href='#L116'>116</a>
 <a name='L117'></a><a href='#L117'>117</a>
 <a name='L118'></a><a href='#L118'>118</a>
-<a name='L119'></a><a href='#L119'>119</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">3x</span>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
@@ -269,6 +285,18 @@
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -285,6 +313,8 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
@@ -311,12 +341,13 @@ import { TemplateEngine } from './TemplateEngine'
 import { DockerService } from '../docker/DockerService'
 import { PortAllocator } from './PortAllocator'
 import { CommentService } from '../comments/CommentService'
+import { StackService } from './StackService'
 &nbsp;
 export class StackManager {
   async deploy(payload: MergeRequestPayload, projectKey: string) {
     const projectId = payload.project_id
     const mrId = payload.mr_id
-    const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
+    const tmpPath = path.join(os.tmpdir(), 'instantiate', projectId.toString(), mrId.toString())
     const cloneUrl = `${payload.repo}`
     const hostdomain = process.env.HOST_DOMAIN ?? 'localhost'
     const hostScheme = process.env.HOST_SCHEME ?? 'http'
@@ -384,12 +415,24 @@ export class StackManager {
       await TemplateEngine.renderToFile(composeInput, composeOutput, context)
 &nbsp;
       // Lancement des containers
-      await DockerService.up(tmpPath, `mr-${mrId}`)
+      await DockerService.up(tmpPath, `${projectId}-mr-${mrId}`)
       await commenter.postStatusComment(payload, 'ready', portsLinks)
-      logger.info(`[stack] Stack for the MR #${mrId} successfully deployed`)
+      logger.info(`[stack] Stack for the MR #${mrId} on project ${projectId} successfully deployed`)
+&nbsp;
+      StackService.save({
+        projectId,
+        projectName: payload.projectName,
+        mergeRequestName: payload.mergeRequestName,
+        ports: ports,
+        mr_id: payload.mr_id,
+        provider: payload.provider,
+        status: 'running',
+        links: portsLinks
+      })
+&nbsp;
       return hostDns
     } catch (err) {
-      logger.error(`[stack] Error during the deployment of the stack for MR #${mrId}`)
+      logger.error(`[stack] Error during the deployment of the stack for MR #${mrId} on project ${projectId}`)
       throw err
     }
   }
@@ -397,22 +440,24 @@ export class StackManager {
   async destroy(payload: MergeRequestPayload, projectKey: string) {
     const projectId = payload.project_id
     const mrId = payload.mr_id
-    const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
+    const tmpPath = path.join(os.tmpdir(), 'instantiate', projectId.toString(), mrId.toString())
     const commenter = CommentService.getCommenter(payload.provider)
 &nbsp;
     try {
       logger.info(`[stack] Removing of the stack for MR #${mrId}`)
-      await DockerService.down(tmpPath, `mr-${mrId}`)
+      await DockerService.down(tmpPath, `${projectId}-mr-${mrId}`)
       await PortAllocator.releasePorts(projectId, mrId)
 &nbsp;
       await db.updateMergeRequest(payload, 'closed')
 &nbsp;
-      logger.info(`[stack] Stack for MR #${mrId} successfully removed`)
+      logger.info(`[stack] Stack for MR #${mrId} on project ${projectId} successfully removed`)
+&nbsp;
+      await StackService.remove(projectId, mrId)
 &nbsp;
       await fs.rm(tmpPath, { recursive: true, force: true })
       await commenter.postStatusComment(payload, 'closed')
     } catch (err) {
-      logger.error(`[stack] Error during the removal of the stack for MR #${mrId}`)
+      logger.error(`[stack] Error during the removal of the stack for MR #${mrId} on project ${projectId}`)
       throw err
     }
   }
@@ -424,7 +469,7 @@ export class StackManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-04-13T11:28:28.165Z
+                at 2025-04-13T15:36:02.038Z
             </div>
         <script src="../prettify.js"></script>
         <script>
