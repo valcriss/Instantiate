@@ -46,13 +46,55 @@ export default {
   updateMergeRequest: async (payload: MergeRequestPayload, state: string) => {
     await pool.query(
       `
-      INSERT INTO merge_requests (project_id, mr_id, repo, status, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, NOW(), NOW())
+      INSERT INTO merge_requests (project_id, mr_id, project_name, merge_request_name, repo, status, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
       ON CONFLICT (project_id, mr_id) DO UPDATE
-      SET status = $4, updated_at = NOW()
+      SET status = $6, updated_at = NOW()
       `,
-      [payload.project_id, payload.mr_id, payload.repo, payload.status]
+      [payload.project_id, payload.mr_id, payload.projectName, payload.mergeRequestName, payload.repo, payload.status]
     )
+  },
+  saveStack: async (
+    projectId: string,
+    mrId: string,
+    projectName: string,
+    mergeRequestName: string,
+    ports: Record<string, number>,
+    provider: string,
+    status: string,
+    links: Record<string, string>
+  ) => {
+    await pool.query(
+      `
+      INSERT INTO stacks (project_id, mr_id, project_name, merge_request_name, ports, provider, status, links, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+      ON CONFLICT (project_id, mr_id) DO UPDATE
+      SET ports = $5,
+          provider = $6,
+          status = $7,
+          links = $8,
+          updated_at = now()
+      `,
+      [projectId, mrId, projectName, mergeRequestName, JSON.stringify(ports), provider, status, JSON.stringify(links)]
+    )
+  },
+  removeStack: async (projectId: string, mrId: string) => {
+    await pool.query(`DELETE FROM stacks WHERE project_id = $1 AND mr_id = $2`, [projectId, mrId])
+  },
+  getAllStacks: async () => {
+    const result = await pool.query(`SELECT * FROM stacks ORDER BY created_at DESC`)
+    return result.rows.map((row) => ({
+      projectId: row.project_id,
+      mr_id: row.mr_id,
+      projectName: row.project_name,
+      mergeRequestName: row.merge_request_name,
+      ports: row.ports,
+      provider: row.provider,
+      status: row.status,
+      links: row.links,
+      updatedAt: row.updated_at.toISOString(),
+      createdAt: row.created_at.toISOString()
+    }))
   },
   getClient: () => pool.connect()
 }

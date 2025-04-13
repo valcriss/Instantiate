@@ -47,6 +47,8 @@ services:
       - POSTGRES_USER=instantiate
       - POSTGRES_PASSWORD=instantiate
       - POSTGRES_DB=instantiate
+    ports:
+      - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:

@@ -3,6 +3,7 @@ import { MergeRequestPayload } from '../types/MergeRequestPayload'
 type GitlabReqBody = {
   object_attributes: {
     id: number
+    title: string
     state: string
     source_branch: string
     last_commit: {
@@ -12,6 +13,7 @@ type GitlabReqBody = {
   }
   project: {
     id: string
+    name: string
     git_http_url: string
   }
 }
@@ -32,6 +34,8 @@ export function parseGitlabWebhook(body: GitlabReqBody): MergeRequestPayload {
   }
   return {
     project_id: body.project.id,
+    projectName: body.project.name,
+    mergeRequestName: mr.title,
     mr_id: mr.id.toString(),
     mr_iid: mr.id.toString(),
     full_name: body.project.id,

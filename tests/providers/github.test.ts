@@ -7,6 +7,7 @@ describe('parseGithubWebhook', () => {
       action: 'opened',
       pull_request: {
         id: 123456,
+        title: '',
         number: 456,
         head: {
           ref: 'feature/awesome-feature',
@@ -27,6 +28,8 @@ describe('parseGithubWebhook', () => {
 
     expect(result).toEqual({
       project_id: 'valcriss',
+      projectName: 'valcriss/instantiate-demo',
+      mergeRequestName: '',
       mr_id: '123456',
       mr_iid: '456',
       status: 'open',
@@ -44,6 +47,7 @@ describe('parseGithubWebhook', () => {
       action: 'closed',
       pull_request: {
         id: 987654,
+        title: '',
         number: 456,
         head: {
           ref: 'bugfix/fix-typo',
@@ -74,6 +78,7 @@ describe('parseGithubWebhook', () => {
       action: 'opened',
       pull_request: {
         id: 123,
+        title: '',
         number: 456,
         head: {
           ref: 'feature/test',
@@ -105,6 +110,7 @@ describe('parseGithubWebhook', () => {
       action: 'opened',
       pull_request: {
         id: 456,
+        title: '',
         number: 456,
         head: {
           ref: 'feature/docker',

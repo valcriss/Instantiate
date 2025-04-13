@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
+    "postbuild": "npx ncp src/templates dist/templates",
     "start": "node dist/server.js",
     "migrate:up": "node-pg-migrate up",
     "test": "jest --forceExit",
@@ -55,6 +56,7 @@
     "mqtt": "^5.11.0",
     "mustache": "^4.2.0",
     "node-fetch": "^3.3.2",
+    "npc": "^0.0.1",
     "pg": "^8.14.1",
     "pino": "^9.6.0",
     "simple-git": "^3.27.0",

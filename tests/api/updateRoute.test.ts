@@ -53,6 +53,8 @@ describe('POST /api/update', () => {
   // Exemple de payload
   const fakePayload: MergeRequestPayload = {
     project_id: '123',
+    projectName: '',
+    mergeRequestName: '',
     mr_id: '123',
     mr_iid: '123',
     status: 'open',

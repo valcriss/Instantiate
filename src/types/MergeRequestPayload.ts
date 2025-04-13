@@ -1,6 +1,8 @@
 export type MergeRequestPayload = {
   project_id: string
   mr_id: string
+  projectName: string
+  mergeRequestName: string
   mr_iid: string
   status: 'open' | 'closed'
   branch: string

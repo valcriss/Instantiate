@@ -106,6 +106,20 @@ For each repository:
 
 ---
 
+### 4. Stack Overview Page
+
+Instantiate provides a lightweight, server-rendered web page at /stacks that displays all currently running stacks.
+
+Each stack entry includes:
+- The project key and merge request ID
+- The source control provider (GitHub or GitLab)
+- A list of clickable service URLs
+- The creation date and time
+
+This page offers a quick and human-friendly overview of all deployed environments, without requiring a separate frontend or dashboard service.
+
+![Dashboard](./docs/dashboard.png)
+
 ## Development
 
 ```bash

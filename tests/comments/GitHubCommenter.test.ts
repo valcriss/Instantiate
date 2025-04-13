@@ -16,6 +16,8 @@ describe('GitHubCommenter', () => {
 
   const fakePayload: MergeRequestPayload = {
     project_id: '123',
+    projectName: '',
+    mergeRequestName: '',
     mr_id: '456',
     mr_iid: '456',
     status: 'open',

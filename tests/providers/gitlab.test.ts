@@ -6,6 +6,7 @@ describe('parseGitlabWebhook', () => {
     const body = {
       object_attributes: {
         id: 54321,
+        title: 'Test MR',
         state: 'opened',
         source_branch: 'feature/gl-feature',
         last_commit: {
@@ -14,6 +15,7 @@ describe('parseGitlabWebhook', () => {
         author_id: 99
       },
       project: {
+        name: 'instantiate-gl',
         id: 'valcriss',
         git_http_url: 'valcriss/instantiate-gl'
       },
@@ -34,6 +36,8 @@ describe('parseGitlabWebhook', () => {
       sha: 'abc123def456',
       author: '99',
       full_name: 'valcriss',
+      mergeRequestName: 'Test MR',
+      projectName: 'instantiate-gl',
       provider: 'gitlab'
     })
   })
@@ -42,6 +46,7 @@ describe('parseGitlabWebhook', () => {
     const closedBody = {
       object_attributes: {
         id: 123,
+        title: '',
         state: 'closed',
         source_branch: 'fix/closed-branch',
         last_commit: {
@@ -51,6 +56,7 @@ describe('parseGitlabWebhook', () => {
       },
       project: {
         id: 'valcriss',
+        name: '',
         git_http_url: 'group/project'
       },
       user: {
@@ -80,6 +86,7 @@ describe('parseGitlabWebhook', () => {
     const body = {
       object_attributes: {
         id: 123,
+        title: '',
         state: 'opened',
         source_branch: 'feature/test',
         last_commit: {
@@ -89,6 +96,7 @@ describe('parseGitlabWebhook', () => {
       },
       project: {
         id: 'repo123',
+        name: '',
         git_http_url: 'https://gitlab.com/test/repo.git'
       }
     }
@@ -107,6 +115,7 @@ describe('parseGitlabWebhook', () => {
     const body = {
       object_attributes: {
         id: 456,
+        title: '',
         state: 'opened',
         source_branch: 'feature/docker',
         last_commit: {
@@ -116,6 +125,7 @@ describe('parseGitlabWebhook', () => {
       },
       project: {
         id: 'repo456',
+        name: '',
         git_http_url: 'http://localhost/test/repo.git'
       }
     }

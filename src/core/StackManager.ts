@@ -10,12 +10,13 @@ import { TemplateEngine } from './TemplateEngine'
 import { DockerService } from '../docker/DockerService'
 import { PortAllocator } from './PortAllocator'
 import { CommentService } from '../comments/CommentService'
+import { StackService } from './StackService'
 
 export class StackManager {
   async deploy(payload: MergeRequestPayload, projectKey: string) {
     const projectId = payload.project_id
     const mrId = payload.mr_id
-    const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
+    const tmpPath = path.join(os.tmpdir(), 'instantiate', projectId.toString(), mrId.toString())
     const cloneUrl = `${payload.repo}`
     const hostdomain = process.env.HOST_DOMAIN ?? 'localhost'
     const hostScheme = process.env.HOST_SCHEME ?? 'http'
@@ -83,12 +84,24 @@ export class StackManager {
       await TemplateEngine.renderToFile(composeInput, composeOutput, context)
 
       // Lancement des containers
-      await DockerService.up(tmpPath, `mr-${mrId}`)
+      await DockerService.up(tmpPath, `${projectId}-mr-${mrId}`)
       await commenter.postStatusComment(payload, 'ready', portsLinks)
-      logger.info(`[stack] Stack for the MR #${mrId} successfully deployed`)
+      logger.info(`[stack] Stack for the MR #${mrId} on project ${projectId} successfully deployed`)
+
+      StackService.save({
+        projectId,
+        projectName: payload.projectName,
+        mergeRequestName: payload.mergeRequestName,
+        ports: ports,
+        mr_id: payload.mr_id,
+        provider: payload.provider,
+        status: 'running',
+        links: portsLinks
+      })
+
       return hostDns
     } catch (err) {
-      logger.error(`[stack] Error during the deployment of the stack for MR #${mrId}`)
+      logger.error(`[stack] Error during the deployment of the stack for MR #${mrId} on project ${projectId}`)
       throw err
     }
   }
@@ -96,22 +109,24 @@ export class StackManager {
   async destroy(payload: MergeRequestPayload, projectKey: string) {
     const projectId = payload.project_id
     const mrId = payload.mr_id
-    const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
+    const tmpPath = path.join(os.tmpdir(), 'instantiate', projectId.toString(), mrId.toString())
     const commenter = CommentService.getCommenter(payload.provider)
 
     try {
       logger.info(`[stack] Removing of the stack for MR #${mrId}`)
-      await DockerService.down(tmpPath, `mr-${mrId}`)
+      await DockerService.down(tmpPath, `${projectId}-mr-${mrId}`)
       await PortAllocator.releasePorts(projectId, mrId)
 
       await db.updateMergeRequest(payload, 'closed')
 
-      logger.info(`[stack] Stack for MR #${mrId} successfully removed`)
+      logger.info(`[stack] Stack for MR #${mrId} on project ${projectId} successfully removed`)
+
+      await StackService.remove(projectId, mrId)
 
       await fs.rm(tmpPath, { recursive: true, force: true })
       await commenter.postStatusComment(payload, 'closed')
     } catch (err) {
-      logger.error(`[stack] Error during the removal of the stack for MR #${mrId}`)
+      logger.error(`[stack] Error during the removal of the stack for MR #${mrId} on project ${projectId}`)
       throw err
     }
   }
