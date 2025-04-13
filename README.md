@@ -73,7 +73,28 @@ services:
 
 ### 2. Set Up Instantiate
 
-**Work in progress**
+To run Instantiate locally or on a server, you need to:
+
+1. **Download** the [`docker-compose.yml`](https://raw.githubusercontent.com/valcriss/Instantiate/refs/heads/main/docker-compose.yml) file and place it at the root of your deployment folder.
+2. **Set environment variables** in **instantiate** service to configure Instantiate according to your needs (see table below).
+3. **Launch the stack** with:
+
+```bash
+docker compose up -d
+```
+#### Environment Variables
+
+| Variable                   | Required                                       | Description                                                                                |
+| -------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| NODE_ENV                   | Yes                                            | Should be set to production to enable production mode behavior.                            |
+| LOG_LEVEL                  | Default info                                   | Logging verbosity (info, warn, debug, error). Default is info.                             |
+| HOST_DOMAIN                | Default localhost                              | Public domain name or IP where Instantiate build stacks are accessible (e.g. localhost).   |
+| HOST_SCHEME                | Default http                                   | URL scheme to use (http or https). Used to build stack URLs.                               |
+| REPOSITORY_GITLAB_USERNAME | Required for private repositories              | GitLab username with access to the repositories being deployed (for private repositories). |
+| REPOSITORY_GITLAB_TOKEN    | Required for private repositories and comments | GitLab personal access token for commenting on merge requests.                             |
+| REPOSITORY_GITHUB_USERNAME | Required for private repositories              | GitHub username with access to the repositories being deployed (for private repositories). |
+| REPOSITORY_GITHUB_TOKEN    | Required for private repositories and comments | GitHub personal access token for commenting on merge requests                              |
+
 
 ### 3. Configure Webhooks
 

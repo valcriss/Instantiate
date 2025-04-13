@@ -1,4 +1,3 @@
-import express from 'express'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 
 type GitlabReqBody = {

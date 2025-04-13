@@ -38,7 +38,7 @@ describe('StackManager.destroy', () => {
 
   afterAll(async () => {
     await closeConnection()
-    await closeLogger()
+    closeLogger()
   })
 
   it('supprime la stack et libère les ports', async () => {

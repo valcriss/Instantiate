@@ -10,7 +10,7 @@ export function ensureMQTTClientIsInitialized() {
   }
 }
 
-export function initializeMQTTClient(brokerUrl: string = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883') {
+export function initializeMQTTClient(brokerUrl: string = process.env.MQTT_BROKER_URL ?? 'mqtt://localhost:1883') {
   client = mqtt.connect(brokerUrl)
 
   client.on('connect', () => {

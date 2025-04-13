@@ -51,7 +51,7 @@ describe('StackManager.deploy', () => {
 
   afterAll(async () => {
     await closeConnection()
-    await closeLogger()
+    closeLogger()
   })
 
   it('orchestre le déploiement complet d’une MR', async () => {

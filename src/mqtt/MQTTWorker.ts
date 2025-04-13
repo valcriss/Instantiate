@@ -9,7 +9,7 @@ export function ensureMQTTWorkerIsInitialized() {
 }
 let client: MqttClient
 
-export function initializeMQTTWorker(brokerUrl: string = process.env.MQTT_BROKER_URL || 'mqtt://localhost:1883') {
+export function initializeMQTTWorker(brokerUrl: string = process.env.MQTT_BROKER_URL ?? 'mqtt://localhost:1883') {
   client = mqtt.connect(brokerUrl)
 
   client.on('connect', () => {

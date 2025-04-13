@@ -25,6 +25,7 @@ const mockDestroy = jest.fn()
 
 // Création de l'app Express réelle, SANS listen()
 const app = express()
+app.disable('x-powered-by')
 app.use(express.json())
 app.use('/api', updateRoute)
 
@@ -36,7 +37,7 @@ beforeAll(async () => {
 afterAll(async () => {
   // Nettoyage / Fermeture de connexions éventuelles
   await closeConnection()
-  await closeLogger()
+  closeLogger()
   // On remet les mocks à zéro au cas où
   jest.clearAllMocks()
   jest.resetAllMocks()
