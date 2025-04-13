@@ -32,6 +32,12 @@ export class GitLabCommenter {
       logger.warn(`[gitlab-comment] GitLab token not valid, unable to read comments`)
       return []
     }
+
+    if (typeof response.json !== 'function') {
+      logger.warn(`[gitlab-comment] Unexpected response format, unable to parse comments`)
+      return []
+    }
+
     return (await response.json()) as GitLabComment[]
   }
 
