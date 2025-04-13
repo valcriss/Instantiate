@@ -1,14 +1,10 @@
 import fetch from 'node-fetch'
 import logger from '../../src/utils/logger'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
-import { Response } from 'node-fetch'
 import { GitLabCommenter } from '../../src/comments/GitLabCommenter'
-import { COMMENT_SIGNATURE } from '../../src/comments/CommentService'
+import { COMMENT_SIGNATURE, generateComment } from '../../src/comments/CommentService'
 
-// Force l'utilisation du mock de fetch (typage TypeScript)
-const { Response: MockResponse } = jest.requireActual('node-fetch')
-
-jest.mock('node-fetch') // ou jest.mock('node-fetch', () => ...) si vous voulez personnaliser
+jest.mock('node-fetch')
 jest.mock('../../src/utils/logger')
 
 describe('GitLabCommenter', () => {
@@ -22,81 +18,165 @@ describe('GitLabCommenter', () => {
     mr_iid: '456',
     status: 'open',
     branch: 'main',
-    repo: 'https://gitlab.example.com/valcriss/test-repo',
+    repo: 'https://gitlab.example.com/group/project',
     sha: 'abcde',
-    author: 'valcriss',
-    full_name: 'valcriss/test-repo',
+    author: 'test-author',
+    full_name: 'group/project',
     provider: 'gitlab'
   }
 
   beforeAll(() => {
-    // Sauvegarde de la valeur initiale de la variable d'environnement
-    originalGitLabToken = process.env.GITLAB_TOKEN
+    originalGitLabToken = process.env.REPOSITORY_GITLAB_TOKEN
   })
 
   beforeEach(() => {
-    // On peut initialiser un token "factice" pour que getHeaders() renvoie quelque chose
-    process.env.GITLAB_TOKEN = 'fake-gitlab-token'
-    // Réinitialisation du mock de fetch avant chaque test
+    process.env.REPOSITORY_GITLAB_TOKEN = 'fake-gitlab-token'
     mockFetch.mockReset()
-    // Réinitialisation de logger
     ;(logger.info as jest.Mock).mockClear()
+    ;(logger.warn as jest.Mock).mockClear()
 
     commenter = new GitLabCommenter()
   })
 
   afterAll(() => {
-    // Restaure la valeur initiale
-    process.env.GITLAB_TOKEN = originalGitLabToken
+    process.env.REPOSITORY_GITLAB_TOKEN = originalGitLabToken
   })
 
-  // -------------------------------------------------------------
-  // Tests pour getGitLabApiUrlFromProjectUrl
-  // -------------------------------------------------------------
   describe('getGitLabApiUrlFromProjectUrl', () => {
-    it('retourne un URL d’API valide pour un URL valide', () => {
-      // Méthode privée, mais on peut tester indirectement via un wrapper
-      // ou tester directement en la rendant publique dans un mock.
-      // Ici, on appelle la méthode privée via (commenter as any).getGitLabApiUrlFromProjectUrl(...)
-      const url = (commenter as GitLabCommenter).getGitLabApiUrlFromProjectUrl('https://gitlab.example.com/group/project')
+    it('returns a valid API URL for a valid project URL', () => {
+      const url = commenter.getGitLabApiUrlFromProjectUrl('https://gitlab.example.com/group/project')
       expect(url).toBe('https://gitlab.example.com/api/v4')
     })
 
-    it('lève une erreur pour un URL invalide', () => {
+    it('throws an error for an invalid project URL', () => {
       expect(() => {
-        ;(commenter as GitLabCommenter).getGitLabApiUrlFromProjectUrl('not-a-valid-url')
-      }).toThrowError('Invalid GitLab project URL')
+        commenter.getGitLabApiUrlFromProjectUrl('invalid-url')
+      }).toThrowError('Invalid GitLab project URL: invalid-url')
     })
   })
 
-  // -------------------------------------------------------------
-  // Tests pour postStatusComment
-  // -------------------------------------------------------------
-  describe('postStatusComment', () => {
-    it("n'envoie pas de requête si GITLAB_TOKEN est vide", async () => {
-      process.env.GITLAB_TOKEN = ''
+  describe('getHeaders', () => {
+    it('returns headers when token is present', () => {
+      const headers = (commenter as GitLabCommenter).getHeaders()
+      expect(headers).toEqual({
+        'PRIVATE-TOKEN': 'fake-gitlab-token',
+        Accept: 'application/json',
+        'User-Agent': 'InstantiateBot',
+        'Content-Type': 'application/json'
+      })
+    })
 
-      await commenter.postStatusComment(fakePayload, 'in_progress')
+    it('returns null when token is absent', () => {
+      process.env.REPOSITORY_GITLAB_TOKEN = ''
+      const headers = (commenter as GitLabCommenter).getHeaders()
+      expect(headers).toBeNull()
+    })
+  })
 
-      // fetch ne doit pas être appelé
+  describe('getComments', () => {
+    it('returns an empty array if headers are missing', async () => {
+      process.env.REPOSITORY_GITLAB_TOKEN = ''
+      const comments = await (commenter as GitLabCommenter).getComments('https://gitlab.example.com', '123', '456')
+      expect(comments).toEqual([])
+    })
+
+    it('fetches comments from the API', async () => {
+      const mockResponse = [{ id: '1', body: 'Test comment' }]
+      mockFetch.mockResolvedValueOnce({
+        status: 200,
+        json: jest.fn().mockResolvedValueOnce(mockResponse)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+
+      const comments = await (commenter as GitLabCommenter).getComments('https://gitlab.example.com', '123', '456')
+      expect(comments).toEqual(mockResponse)
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://gitlab.example.com/api/v4/projects/123/merge_requests/456/notes',
+        expect.objectContaining({ headers: expect.any(Object) })
+      )
+    })
+
+    it('returns an empty array and logs a warning if the response status is 403', async () => {
+      mockFetch.mockResolvedValueOnce({
+        status: 403
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+
+      const comments = await (commenter as GitLabCommenter).getComments('https://gitlab.example.com', '123', '456')
+
+      expect(comments).toEqual([])
+      expect(logger.warn).toHaveBeenCalledWith('[gitlab-comment] GitLab token not valid, unable to read comments')
+    })
+  })
+
+  describe('deleteComment', () => {
+    it('does nothing if headers are missing', async () => {
+      process.env.REPOSITORY_GITLAB_TOKEN = ''
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (commenter as any).deleteComment('https://gitlab.example.com', '123', '456', '789')
       expect(mockFetch).not.toHaveBeenCalled()
     })
+
+    it('sends a DELETE request to the API', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockFetch.mockResolvedValueOnce({ status: 204 } as any)
+      await (commenter as GitLabCommenter).deleteComment('https://gitlab.example.com', '123', '456', '789')
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://gitlab.example.com/api/v4/projects/123/merge_requests/456/notes/789',
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
   })
 
-  // -------------------------------------------------------------
-  // Tests pour deleteComment
-  // -------------------------------------------------------------
-  describe('deleteComment', () => {
-    it("ne fait rien si les en-têtes d'authentification sont absents", async () => {
-      process.env.GITLAB_TOKEN = '' // Simule l'absence de token GitLab
+  describe('removePreviousStatusComment', () => {
+    it('deletes comments containing the signature', async () => {
+      const mockComments = [
+        { id: '1', body: 'Test comment' },
+        { id: '2', body: `Comment with ${COMMENT_SIGNATURE}` }
+      ]
+      mockFetch.mockResolvedValueOnce({
+        status: 200,
+        json: jest.fn().mockResolvedValueOnce(mockComments)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockFetch.mockResolvedValueOnce({ status: 204 } as any)
 
-      const commenter = new GitLabCommenter()
+      await (commenter as GitLabCommenter).removePreviousStatusComment(fakePayload)
 
-      // Appelle la méthode deleteComment
-      await commenter['deleteComment']('https://gitlab.example.com/group/project', '123', '123', '456')
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://gitlab.example.com/api/v4/projects/123/merge_requests/456/notes/2',
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    })
+  })
 
-      // Vérifie que fetch n'a pas été appelé
-      expect(fetch).not.toHaveBeenCalled()
+  describe('postStatusComment', () => {
+    it('does nothing if headers are missing', async () => {
+      process.env.REPOSITORY_GITLAB_TOKEN = ''
+      await commenter.postStatusComment(fakePayload, 'in_progress')
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('posts a status comment to the API', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockFetch.mockResolvedValueOnce({ status: 204 } as any) // Mock delete comment response
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockFetch.mockResolvedValueOnce({ status: 201 } as any) // Mock post comment response
+      await commenter.postStatusComment(fakePayload, 'in_progress', { link: 'http://example.com' })
+
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2, // Ensure we are checking the second call
+        'https://gitlab.example.com/api/v4/projects/123/merge_requests/456/notes',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            body: '<!-- instantiate-comment -->\n Deployment in progress...',
+            id: '123',
+            merge_request_iid: '456'
+          })
+        })
+      )
     })
   })
 })

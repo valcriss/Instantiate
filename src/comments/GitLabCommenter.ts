@@ -9,7 +9,7 @@ type GitLabComment = {
 }
 
 export class GitLabCommenter {
-  private getHeaders() {
+  getHeaders() {
     let gitlabToken = process.env.REPOSITORY_GITLAB_TOKEN
     if (!gitlabToken) return null
     return {
@@ -20,7 +20,7 @@ export class GitLabCommenter {
     }
   }
 
-  private async getComments(projectUrl: string, projectId: string, mrIid: string): Promise<GitLabComment[]> {
+  async getComments(projectUrl: string, projectId: string, mrIid: string): Promise<GitLabComment[]> {
     const headers = this.getHeaders()
     if (!headers) {
       return []
@@ -32,10 +32,16 @@ export class GitLabCommenter {
       logger.warn(`[gitlab-comment] GitLab token not valid, unable to read comments`)
       return []
     }
+
+    if (typeof response.json !== 'function') {
+      logger.warn(`[gitlab-comment] Unexpected response format, unable to parse comments`)
+      return []
+    }
+
     return (await response.json()) as GitLabComment[]
   }
 
-  private async deleteComment(projectUrl: string, projectId: string, mrIid: string, commentId: string) {
+  async deleteComment(projectUrl: string, projectId: string, mrIid: string, commentId: string) {
     const headers = this.getHeaders()
     if (!headers) {
       return
@@ -48,7 +54,7 @@ export class GitLabCommenter {
     })
   }
 
-  private async removePreviousStatusComment(payload: MergeRequestPayload) {
+  async removePreviousStatusComment(payload: MergeRequestPayload) {
     const url = payload.repo
     const projectId = payload.project_id
     const mrIid = payload.mr_id

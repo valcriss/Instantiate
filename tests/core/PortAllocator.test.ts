@@ -14,7 +14,7 @@ describe('PortAllocator', () => {
 
   afterAll(async () => {
     await closeConnection()
-    await closeLogger()
+    closeLogger()
   })
 
   it('attribue le premier port disponible dans la plage', async () => {

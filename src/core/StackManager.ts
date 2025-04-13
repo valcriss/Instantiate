@@ -17,8 +17,8 @@ export class StackManager {
     const mrId = payload.mr_id
     const tmpPath = path.join(os.tmpdir(), 'instantiate', mrId)
     const cloneUrl = `${payload.repo}`
-    const hostdomain = process.env.HOST_DOMAIN || 'localhost'
-    const hostScheme = process.env.HOST_SCHEME || 'http'
+    const hostdomain = process.env.HOST_DOMAIN ?? 'localhost'
+    const hostScheme = process.env.HOST_SCHEME ?? 'http'
     const hostDns = `${hostScheme}://${hostdomain}`
     const commenter = CommentService.getCommenter(payload.provider)
     try {

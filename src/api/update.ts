@@ -49,7 +49,6 @@ export function enqueueUpdateEvent(data: { payload: MergeRequestPayload; project
     publishUpdateEvent(data)
   } catch (err) {
     logger.error('[api] Failed to enqueue update event')
-    throw err
   }
 }
 
