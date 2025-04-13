@@ -5,6 +5,7 @@ import { PortAllocator } from '../../src/core/PortAllocator'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { closeLogger } from '../../src/utils/logger'
 import { closeConnection } from '../../src/mqtt/MQTTClient'
+import { StackService } from '../../src/core/StackService'
 
 jest.mock('../../src/docker/DockerService')
 jest.mock('../../src/db')
@@ -13,12 +14,15 @@ jest.mock('../../src/core/PortAllocator')
 const mockDocker = DockerService as jest.Mocked<typeof DockerService>
 const mockDb = db as jest.Mocked<typeof db>
 const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
+const mockStackService = StackService as jest.Mocked<typeof StackService>
 
 describe('StackManager.destroy', () => {
   const stackManager = new StackManager()
 
   const payload: MergeRequestPayload = {
     project_id: 'valcriss',
+    projectName: '',
+    mergeRequestName: '',
     mr_id: 'mr-99',
     mr_iid: 'mr-99',
     status: 'closed',
@@ -46,11 +50,11 @@ describe('StackManager.destroy', () => {
     mockDocker.down.mockResolvedValue()
     mockPorts.releasePorts.mockResolvedValue()
     mockDb.releasePorts.mockResolvedValue()
-
+    mockDb.saveStack.mockResolvedValue()
     await stackManager.destroy(payload as MergeRequestPayload, projectKey)
 
     // ✅ Vérifie l’arrêt de Docker
-    expect(mockDocker.down).toHaveBeenCalledWith(expect.stringContaining('instantiate'), `mr-${payload.mr_id}`)
+    expect(mockDocker.down).toHaveBeenCalledWith(expect.stringContaining('instantiate'), `${payload.project_id}-mr-${payload.mr_id}`)
 
     // ✅ Vérifie la libération des ports
     expect(mockPorts.releasePorts).toHaveBeenCalledWith('valcriss', payload.mr_id)
@@ -59,6 +63,8 @@ describe('StackManager.destroy', () => {
     expect(mockDb.updateMergeRequest).toHaveBeenCalledWith(
       {
         author: 'valcriss',
+        projectName: '',
+        mergeRequestName: '',
         full_name: 'valcriss/crashy',
         provider: 'github',
         branch: 'fix/crash',
@@ -81,6 +87,8 @@ describe('StackManager.destroy', () => {
 
     const payload: MergeRequestPayload = {
       project_id: 'valcriss',
+      projectName: '',
+      mergeRequestName: '',
       mr_id: 'mr-error',
       mr_iid: 'mr-error',
       status: 'closed',

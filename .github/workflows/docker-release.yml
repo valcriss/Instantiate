@@ -33,3 +33,6 @@ jobs:
           IMAGE=danielsilvestre37/instantiate:$TAG
           docker build -t $IMAGE .
           docker push $IMAGE
+          IMAGE=danielsilvestre37/instantiate:latest
+          docker build -t $IMAGE .
+          docker push $IMAGE

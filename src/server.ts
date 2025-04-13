@@ -2,6 +2,8 @@ import express from 'express'
 import dotenv from 'dotenv'
 import logger from './utils/logger'
 import updateRoute from './api/update'
+import stacksApiRoute from './api/stacksApi'
+import stacksPageRoute from './pages/stacksPage'
 
 logger.info('[server] Server is starting...')
 
@@ -11,6 +13,8 @@ const app = express()
 app.disable('x-powered-by')
 app.use(express.json())
 app.use('/api', updateRoute)
+app.use('/api', stacksApiRoute)
+app.use('/', stacksPageRoute)
 
 app.get('/', (req, res) => {
   res.send('Instantiate backend is running!')

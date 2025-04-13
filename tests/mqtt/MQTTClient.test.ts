@@ -28,6 +28,8 @@ describe('MQTTClient', () => {
   describe('publishUpdateEvent', () => {
     it('should initialize the MQTT client if not already initialized', () => {
       const payload: MergeRequestPayload = {
+        projectName: '',
+        mergeRequestName: '',
         project_id: 'test-project',
         mr_id: 'mr-1',
         mr_iid: 'mr-1',
@@ -52,6 +54,8 @@ describe('MQTTClient', () => {
 
     it('should publish the update event with the correct topic and payload', () => {
       const payload: MergeRequestPayload = {
+        projectName: '',
+        mergeRequestName: '',
         project_id: 'test-project',
         mr_id: 'mr-1',
         mr_iid: 'mr-1',

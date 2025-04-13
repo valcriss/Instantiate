@@ -32,6 +32,8 @@ describe('StackManager.deploy', () => {
 
   const payload: MergeRequestPayload = {
     project_id: 'valcriss',
+    projectName: '',
+    mergeRequestName: '',
     mr_id: 'mr-42',
     mr_iid: 'mr-42',
     status: 'open',
@@ -106,6 +108,8 @@ describe('StackManager.deploy', () => {
     expect(mockDb.updateMergeRequest).toHaveBeenCalledWith(
       {
         author: 'valcriss',
+        projectName: '',
+        mergeRequestName: '',
         full_name: 'valcriss/test-repo',
         provider: 'github',
         branch: 'feature/test',
@@ -142,6 +146,8 @@ describe('StackManager.deploy', () => {
       stackManager.deploy(
         {
           project_id: 'valcriss',
+          projectName: '',
+          mergeRequestName: '',
           mr_id: 'mr-crash',
           mr_iid: 'mr-crash',
           status: 'open',
@@ -180,6 +186,8 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(
       {
         project_id: 'valcriss',
+        projectName: '',
+        mergeRequestName: '',
         mr_id: 'mr-missing-config',
         mr_iid: 'mr-missing-config',
         status: 'open',
@@ -220,6 +228,8 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(
       {
         project_id: 'valcriss',
+        projectName: '',
+        mergeRequestName: '',
         mr_id: 'mr-missing-compose',
         mr_iid: 'mr-missing-compose',
         status: 'open',
@@ -257,6 +267,8 @@ describe('StackManager environment variables', () => {
     const stackManager = new StackManager()
     const payload: MergeRequestPayload = {
       project_id: 'test-project',
+      projectName: '',
+      mergeRequestName: '',
       mr_id: 'mr-1',
       mr_iid: 'mr-1',
       status: 'open',
@@ -287,6 +299,8 @@ describe('StackManager environment variables', () => {
     const stackManager = new StackManager()
     const payload: MergeRequestPayload = {
       project_id: 'test-project',
+      projectName: '',
+      mergeRequestName: '',
       mr_id: 'mr-1',
       mr_iid: 'mr-1',
       status: 'open',
@@ -317,6 +331,8 @@ describe('StackManager environment variables', () => {
     const stackManager = new StackManager()
     const payload: MergeRequestPayload = {
       project_id: 'test-project',
+      projectName: '',
+      mergeRequestName: '',
       mr_id: 'mr-1',
       mr_iid: 'mr-1',
       status: 'open',
@@ -347,6 +363,8 @@ describe('StackManager environment variables', () => {
     const stackManager = new StackManager()
     const payload: MergeRequestPayload = {
       project_id: 'test-project',
+      projectName: '',
+      mergeRequestName: '',
       mr_id: 'mr-1',
       mr_iid: 'mr-1',
       status: 'open',

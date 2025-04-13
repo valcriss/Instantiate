@@ -14,6 +14,8 @@ describe('GitLabCommenter', () => {
 
   const fakePayload: MergeRequestPayload = {
     project_id: '123',
+    projectName: 'group/project',
+    mergeRequestName: 'group/project!456',
     mr_id: '456',
     mr_iid: '456',
     status: 'open',
