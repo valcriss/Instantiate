@@ -55,20 +55,39 @@ Inside your Git repository:
 ```yaml
 # .instantiate/config.yml
 expose_ports:
-  - service: web
-    port: 3000
-    name: WEB_PORT
+  - service: front
+    port: 3000 # internal port
+    name: FRONT_PORT # external port name
+  - service: backend
+    port: 4200 # internal port
+    name: BACKEND_PORT # external port name
 ```
 
 ```yaml
 # .instantiate/docker-compose.yml
 services:
-  web:
+  front:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      - BACKEND_URL:{{HOST_DNS}}:{{BACKEND_PORT}}
     ports:
-      - '${WEB_PORT}:3000'
+      - '{{FRONT_PORT}}:3000'
+  backend:
+    image: awesome/backend:latest
+    ports:
+      - '{{BACKEND_PORT}}:4200'
+  database:
+    image: postgres:latest
+    container_name: database
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=username
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=database
+    volumes:
+      - db_data:/var/lib/postgresql/data
 ```
 
 ### 2. Set Up Instantiate
