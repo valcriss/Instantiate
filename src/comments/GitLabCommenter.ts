@@ -27,7 +27,7 @@ export class GitLabCommenter {
     }
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(projectUrl)
     const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes`
-    const agent = process.env.IGNORE_SSL_ERRORS === 'true' ? new (require('https').Agent)({ rejectUnauthorized: false }) : undefined;
+    const agent = process.env.IGNORE_SSL_ERRORS === 'true' ? new (require('https').Agent)({ rejectUnauthorized: false }) : undefined
     const response = await fetch(url, { headers: headers, agent })
     if (response.status === 403) {
       logger.warn(`[gitlab-comment] GitLab token not valid, unable to read comments`)
@@ -49,7 +49,7 @@ export class GitLabCommenter {
     }
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(projectUrl)
     const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes/${commentId}`
-    const agent = process.env.IGNORE_SSL_ERRORS === 'true' ? new (require('https').Agent)({ rejectUnauthorized: false }) : undefined;
+    const agent = process.env.IGNORE_SSL_ERRORS === 'true' ? new (require('https').Agent)({ rejectUnauthorized: false }) : undefined
     await fetch(url, {
       method: 'DELETE',
       headers: headers,
@@ -83,7 +83,7 @@ export class GitLabCommenter {
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(payload.repo)
 
     const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes`
-    const agent = process.env.IGNORE_SSL_ERRORS === 'true' ? new (require('https').Agent)({ rejectUnauthorized: false }) : undefined;
+    const agent = process.env.IGNORE_SSL_ERRORS === 'true' ? new (require('https').Agent)({ rejectUnauthorized: false }) : undefined
 
     await fetch(url, {
       method: 'POST',
