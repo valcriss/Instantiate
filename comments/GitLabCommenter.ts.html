@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">92.3% </span>
+                <span class="strong">92.53% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>60/65</span>
+                <span class='fraction'>62/67</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">92.06% </span>
+                <span class="strong">92.3% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>58/63</span>
+                <span class='fraction'>60/65</span>
             </div>
         
             
@@ -184,7 +184,9 @@
 <a name='L119'></a><a href='#L119'>119</a>
 <a name='L120'></a><a href='#L120'>120</a>
 <a name='L121'></a><a href='#L121'>121</a>
-<a name='L122'></a><a href='#L122'>122</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">6x</span>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
@@ -226,6 +228,7 @@
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -235,34 +238,35 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -344,6 +348,7 @@ export class GitLabCommenter {
     }
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(projectUrl)
     const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes`
+    logger.debug(url)
     const agent = this.getAgent(url)
     const response = await fetch(url, { headers: headers, agent })
     if (response.status === 403) {
@@ -356,7 +361,12 @@ export class GitLabCommenter {
       return []
     }
     logger.debug(response)
-    return (await response.json()) as GitLabComment[]
+    const result = (await response.json()) as GitLabComment[]
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof result.filter !== 'function') {
+<span class="cstat-no" title="statement not covered" >      logger.warn(`[gitlab-comment] Unexpected response format, unable to filter comments`)</span>
+<span class="cstat-no" title="statement not covered" >      return []</span>
+    }
+    return result
   }
 &nbsp;
   async deleteComment(projectUrl: string, projectId: string, mrIid: string, commentId: string) {
@@ -380,10 +390,6 @@ export class GitLabCommenter {
     const mrIid = payload.mr_id
 &nbsp;
     const comments = await this.getComments(url, projectId, mrIid)
-    <span class="missing-if-branch" title="if path not taken" >I</span>if (!comments) {
-<span class="cstat-no" title="statement not covered" >      logger.warn(`[gitlab-comment] Unable to fetch comments for MR ${mrIid}`)</span>
-<span class="cstat-no" title="statement not covered" >      return</span>
-    }
     const toDeletes = comments.filter((c: GitLabComment) =&gt; c.body.includes(COMMENT_SIGNATURE))
     for (const toDelete of toDeletes) {
       await this.deleteComment(url, projectId, mrIid, toDelete.id)
@@ -433,7 +439,7 @@ export class GitLabCommenter {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-04-15T08:26:44.667Z
+                at 2025-04-15T08:40:27.355Z
             </div>
         <script src="../prettify.js"></script>
         <script>
