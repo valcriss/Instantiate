@@ -11,6 +11,7 @@ import { DockerService } from '../docker/DockerService'
 import { PortAllocator } from './PortAllocator'
 import { CommentService } from '../comments/CommentService'
 import { StackService } from './StackService'
+import { createDirectory, removeDirectory } from '../utils/ioUtils'
 
 export class StackManager {
   async deploy(payload: MergeRequestPayload, projectKey: string) {
@@ -26,8 +27,14 @@ export class StackManager {
       logger.info(`[stack] Starting the deployment of the stack for MR #${mrId}`)
       await commenter.postStatusComment(payload, 'in_progress')
       // Nettoyage et préparation dossier temporaire
-      await fs.rm(tmpPath, { recursive: true, force: true })
-      await fs.mkdir(tmpPath, { recursive: true })
+
+      await removeDirectory(tmpPath)
+      const createDirectoryResult = await createDirectory(tmpPath)
+
+      if (!createDirectoryResult) {
+        logger.error(`[stack] Unable to create directory ${tmpPath}`)
+        return
+      }
 
       // Clonage du repo
       const git = simpleGit({ config: process.env.IGNORE_SSL_ERRORS === 'true' ? ['http.sslVerify=false'] : [] })
