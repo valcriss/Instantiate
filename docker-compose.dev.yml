@@ -24,7 +24,7 @@ services:
       #   REPOSITORY_GITLAB_TOKEN is required for Gitlab comment on merge requests
       #   You can create a personal access token in GitLab with the "api" and "read_repository" scope.
       # ----------------------------------------------------------------------------------------------------
-      # - REPOSITORY_GITLAB_USERNAME=root
+      # - REPOSITORY_GITLAB_USERNAME=username
       # - REPOSITORY_GITLAB_TOKEN=token
       # ----------------------------------------------------------------------------------------------------
       #   Uncomment the following lines and set the values if you want to use GitHub authentication
