@@ -1,3 +1,4 @@
+import { directoryExists } from '../utils/ioUtils'
 import logger from '../utils/logger'
 
 export class DockerService {
@@ -21,6 +22,11 @@ export class DockerService {
   }
 
   static async down(stackPath: string, projectName: string): Promise<void> {
+    if (!(await directoryExists(stackPath))) {
+      logger.warn(`[docker] Stack path does not exist: ${stackPath}`)
+      return
+    }
+
     const { execa } = await import('execa')
     logger.info(`[docker] Stack down: ${projectName}`)
 

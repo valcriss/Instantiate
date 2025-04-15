@@ -20,6 +20,16 @@ export class GitLabCommenter {
     }
   }
 
+  getAgent(url: string) {
+    if (process.env.IGNORE_SSL_ERRORS === 'true') {
+      const protocol = new URL(url).protocol
+      if (protocol === 'https:') {
+        return new (require('https').Agent)({ rejectUnauthorized: false })
+      }
+    }
+    return undefined
+  }
+
   async getComments(projectUrl: string, projectId: string, mrIid: string): Promise<GitLabComment[]> {
     const headers = this.getHeaders()
     if (!headers) {
@@ -27,7 +37,7 @@ export class GitLabCommenter {
     }
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(projectUrl)
     const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes`
-    const agent = process.env.IGNORE_SSL_ERRORS === 'true' ? new (require('https').Agent)({ rejectUnauthorized: false }) : undefined
+    const agent = this.getAgent(url)
     const response = await fetch(url, { headers: headers, agent })
     if (response.status === 403) {
       logger.warn(`[gitlab-comment] GitLab token not valid, unable to read comments`)
@@ -38,7 +48,7 @@ export class GitLabCommenter {
       logger.warn(`[gitlab-comment] Unexpected response format, unable to parse comments`)
       return []
     }
-
+    logger.debug(response)
     return (await response.json()) as GitLabComment[]
   }
 
@@ -49,7 +59,7 @@ export class GitLabCommenter {
     }
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(projectUrl)
     const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes/${commentId}`
-    const agent = process.env.IGNORE_SSL_ERRORS === 'true' ? new (require('https').Agent)({ rejectUnauthorized: false }) : undefined
+    const agent = this.getAgent(url)
     await fetch(url, {
       method: 'DELETE',
       headers: headers,
@@ -63,6 +73,10 @@ export class GitLabCommenter {
     const mrIid = payload.mr_id
 
     const comments = await this.getComments(url, projectId, mrIid)
+    if (!comments) {
+      logger.warn(`[gitlab-comment] Unable to fetch comments for MR ${mrIid}`)
+      return
+    }
     const toDeletes = comments.filter((c: GitLabComment) => c.body.includes(COMMENT_SIGNATURE))
     for (const toDelete of toDeletes) {
       await this.deleteComment(url, projectId, mrIid, toDelete.id)
@@ -83,7 +97,7 @@ export class GitLabCommenter {
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(payload.repo)
 
     const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes`
-    const agent = process.env.IGNORE_SSL_ERRORS === 'true' ? new (require('https').Agent)({ rejectUnauthorized: false }) : undefined
+    const agent = this.getAgent(url)
 
     await fetch(url, {
       method: 'POST',
