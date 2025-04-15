@@ -38,7 +38,7 @@ export class GitLabCommenter {
       logger.warn(`[gitlab-comment] Unexpected response format, unable to parse comments`)
       return []
     }
-
+    logger.debug(response)
     return (await response.json()) as GitLabComment[]
   }
 
@@ -63,6 +63,10 @@ export class GitLabCommenter {
     const mrIid = payload.mr_id
 
     const comments = await this.getComments(url, projectId, mrIid)
+    if (!comments) {
+      logger.warn(`[gitlab-comment] Unable to fetch comments for MR ${mrIid}`)
+      return
+    }
     const toDeletes = comments.filter((c: GitLabComment) => c.body.includes(COMMENT_SIGNATURE))
     for (const toDelete of toDeletes) {
       await this.deleteComment(url, projectId, mrIid, toDelete.id)
