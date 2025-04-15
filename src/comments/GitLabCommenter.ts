@@ -37,6 +37,7 @@ export class GitLabCommenter {
     }
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(projectUrl)
     const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes`
+    logger.debug(url)
     const agent = this.getAgent(url)
     const response = await fetch(url, { headers: headers, agent })
     if (response.status === 403) {
@@ -49,7 +50,12 @@ export class GitLabCommenter {
       return []
     }
     logger.debug(response)
-    return (await response.json()) as GitLabComment[]
+    const result = (await response.json()) as GitLabComment[]
+    if (typeof result.filter !== 'function') {
+      logger.warn(`[gitlab-comment] Unexpected response format, unable to filter comments`)
+      return []
+    }
+    return result
   }
 
   async deleteComment(projectUrl: string, projectId: string, mrIid: string, commentId: string) {
@@ -73,10 +79,6 @@ export class GitLabCommenter {
     const mrIid = payload.mr_id
 
     const comments = await this.getComments(url, projectId, mrIid)
-    if (!comments) {
-      logger.warn(`[gitlab-comment] Unable to fetch comments for MR ${mrIid}`)
-      return
-    }
     const toDeletes = comments.filter((c: GitLabComment) => c.body.includes(COMMENT_SIGNATURE))
     for (const toDelete of toDeletes) {
       await this.deleteComment(url, projectId, mrIid, toDelete.id)
