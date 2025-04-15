@@ -3,6 +3,7 @@ import { MergeRequestPayload } from '../types/MergeRequestPayload'
 type GitlabReqBody = {
   object_attributes: {
     id: number
+    iid: number
     title: string
     state: string
     source_branch: string
@@ -19,6 +20,7 @@ type GitlabReqBody = {
 }
 
 export function parseGitlabWebhook(body: GitlabReqBody): MergeRequestPayload {
+  console.log(body)
   const mr = body.object_attributes
   let authentification = null
   let url = body.project.git_http_url
@@ -37,7 +39,7 @@ export function parseGitlabWebhook(body: GitlabReqBody): MergeRequestPayload {
     projectName: body.project.name,
     mergeRequestName: mr.title,
     mr_id: mr.id.toString(),
-    mr_iid: mr.id.toString(),
+    mr_iid: mr.iid.toString(),
     full_name: body.project.id,
     status: ['closed', 'merged'].includes(mr.state) ? 'closed' : 'open',
     branch: mr.source_branch,

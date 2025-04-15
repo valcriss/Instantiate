@@ -6,6 +6,7 @@ describe('parseGitlabWebhook', () => {
     const body = {
       object_attributes: {
         id: 54321,
+        iid: 456,
         title: 'Test MR',
         state: 'opened',
         source_branch: 'feature/gl-feature',
@@ -29,7 +30,7 @@ describe('parseGitlabWebhook', () => {
     expect(result).toEqual({
       project_id: 'valcriss',
       mr_id: '54321',
-      mr_iid: '54321',
+      mr_iid: '456',
       status: 'open',
       branch: 'feature/gl-feature',
       repo: 'valcriss/instantiate-gl',
@@ -46,6 +47,7 @@ describe('parseGitlabWebhook', () => {
     const closedBody = {
       object_attributes: {
         id: 123,
+        iid: 456,
         title: '',
         state: 'closed',
         source_branch: 'fix/closed-branch',
@@ -86,6 +88,7 @@ describe('parseGitlabWebhook', () => {
     const body = {
       object_attributes: {
         id: 123,
+        iid: 456,
         title: '',
         state: 'opened',
         source_branch: 'feature/test',
@@ -115,6 +118,7 @@ describe('parseGitlabWebhook', () => {
     const body = {
       object_attributes: {
         id: 456,
+        iid: 456,
         title: '',
         state: 'opened',
         source_branch: 'feature/docker',

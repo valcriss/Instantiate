@@ -76,7 +76,7 @@ export class GitLabCommenter {
   async removePreviousStatusComment(payload: MergeRequestPayload) {
     const url = payload.repo
     const projectId = payload.project_id
-    const mrIid = payload.mr_id
+    const mrIid = payload.mr_iid
 
     const comments = await this.getComments(url, projectId, mrIid)
     const toDeletes = comments.filter((c: GitLabComment) => c.body.includes(COMMENT_SIGNATURE))
@@ -94,7 +94,7 @@ export class GitLabCommenter {
     }
     await this.removePreviousStatusComment(payload)
     const projectId = payload.project_id
-    const mrIid = payload.mr_id
+    const mrIid = payload.mr_iid
     const body = { body: generateComment(status, links), id: projectId, merge_request_iid: mrIid }
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(payload.repo)
 
