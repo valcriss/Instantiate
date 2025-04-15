@@ -20,7 +20,6 @@ type GitlabReqBody = {
 }
 
 export function parseGitlabWebhook(body: GitlabReqBody): MergeRequestPayload {
-  console.log(body)
   const mr = body.object_attributes
   let authentification = null
   let url = body.project.git_http_url
