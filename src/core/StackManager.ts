@@ -30,7 +30,7 @@ export class StackManager {
       await fs.mkdir(tmpPath, { recursive: true })
 
       // Clonage du repo
-      const git = simpleGit()
+      const git = simpleGit({ config: process.env.IGNORE_SSL_ERRORS === 'true' ? ['http.sslVerify=false'] : [] })
       await git.clone(cloneUrl, tmpPath, ['--branch', payload.branch])
 
       // Lecture du fichier de config YAML
