@@ -9,11 +9,24 @@ export class TemplateEngine {
    * @param inputPath Chemin vers le template (ex: .instantiate/docker-compose.yml)
    * @param outputPath Chemin où écrire le résultat final
    * @param context Dictionnaire des variables à injecter
+   * @param escapeHtml Si true, les variables seront échappées pour éviter les injections de code
    */
-  static async renderToFile(inputPath: string, outputPath: string, context: Record<string, unknown>): Promise<void> {
+  static async renderToFile(inputPath: string, outputPath: string, context: Record<string, unknown>, escapeHtml: boolean = false): Promise<void> {
     try {
+      // Sauvegarder le comportement d'échappement original
+      const originalEscape = mustache.escape
+
+      // Si escapeHtml est false, désactiver l'échappement
+      if (!escapeHtml) {
+        mustache.escape = (text) => text
+      }
+
       const template = await fs.readFile(inputPath, 'utf-8')
       const result = mustache.render(template, context)
+
+      // Restaurer le comportement d'échappement original
+      mustache.escape = originalEscape
+
       await fs.mkdir(path.dirname(outputPath), { recursive: true })
       await fs.writeFile(outputPath, result, 'utf-8')
       logger.info(`[template] Template rendered in ${outputPath}`)
