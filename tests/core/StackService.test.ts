@@ -39,4 +39,9 @@ describe('StackService', () => {
     expect(stacks).toEqual([mockStackInfo])
     expect(mockDb.getAllStacks).toHaveBeenCalled()
   })
+
+  it('should update stack status', async () => {
+    await StackService.updateStatus('1', '2', 'error')
+    expect(mockDb.updateStackStatus).toHaveBeenCalledWith('1', '2', 'error')
+  })
 })
