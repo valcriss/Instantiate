@@ -87,5 +87,15 @@ describe('HealthChecker', () => {
       expect(logger.default.error).toHaveBeenCalled()
       jest.useRealTimers()
     })
+
+    it('startHealthChecker utilise la valeur par defaut de l\'intervalle', async () => {
+      jest.useFakeTimers()
+      jest.spyOn(HealthChecker, 'checkAllStacks').mockResolvedValueOnce()
+      const { startHealthChecker } = await import('../../src/health/HealthChecker')
+      startHealthChecker()
+      jest.advanceTimersByTime(30000)
+      expect(HealthChecker.checkAllStacks).toHaveBeenCalled()
+      jest.useRealTimers()
+    })
   })
 })
