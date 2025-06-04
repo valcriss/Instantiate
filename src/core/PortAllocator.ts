@@ -1,7 +1,6 @@
 import db from '../db'
 import logger from '../utils/logger'
 
-
 const DEFAULT_PORT_MIN = 10000
 const DEFAULT_PORT_MAX = 11000
 
