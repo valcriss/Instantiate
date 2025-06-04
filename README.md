@@ -109,6 +109,10 @@ docker compose up -d
 | LOG_LEVEL                  | Default info                                   | Logging verbosity (info, warn, debug, error). Default is info.                             |
 | HOST_DOMAIN                | Default localhost                              | Public domain name or IP where Instantiate build stacks are accessible (e.g. localhost).   |
 | HOST_SCHEME                | Default http                                   | URL scheme to use (http or https). Used to build stack URLs.                               |
+| PORT_MIN                   | Default 10000                                  |
+Lower bound for dynamically allocated ports.           |
+| PORT_MAX                   | Default 11000                                  |
+Upper bound for dynamically allocated ports.           |
 | REPOSITORY_GITLAB_USERNAME | Required for private repositories              | GitLab username with access to the repositories being deployed (for private repositories). |
 | REPOSITORY_GITLAB_TOKEN    | Required for private repositories and comments | GitLab personal access token for commenting on merge requests.                             |
 | REPOSITORY_GITHUB_USERNAME | Required for private repositories              | GitHub username with access to the repositories being deployed (for private repositories). |
