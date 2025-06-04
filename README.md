@@ -4,7 +4,11 @@
 
 ## Overview
 
-**Instantiate** is a DevTool for automatically provisioning full-stack development environments for Merge Requests (MRs). It detects the type of project in a Git repository, spins up ephemeral environments in containers, and exposes services with dynamic port management. It supports both GitHub and GitLab via webhook integrations and is designed to work across many tech stacks (Node.js, Java, Python, etc).
+**Instantiate** automatically provisions full-stack environments for each merge request (MR). By reading simple configuration files committed in your repository, it spins up disposable containers with all your services and exposes them on dynamic ports. It integrates with both GitHub and GitLab through webhooks and works for many technology stacks (Node.js, Java, Python, and more).
+
+### Why Instantiate?
+
+During code review, teams often struggle to reproduce the exact application stack of a branch. Instantiate removes that friction by instantly deploying an isolated environment for every MR. Reviewers can access running services through generated links, test new features in conditions close to production, and provide faster feedback. Once the MR is merged or closed, the environment is automatically destroyed, keeping resources tidy and ensuring reproducible testing.
 
 ---
 
@@ -48,9 +52,12 @@
 
 ## Usage
 
-### 1. Prepare Your Project
+### 1. Configure Your Repository
 
-Inside your Git repository:
+Instantiate relies on two files stored at the root of your repo under `.instantiate/`.
+`config.yml` declares which internal ports should be exposed while `docker-compose.yml`
+contains a template of the services to run. Below is a minimal example for a Node frontend
+talking to a backend service:
 
 ```yaml
 # .instantiate/config.yml
@@ -90,6 +97,26 @@ services:
       - db_data:/var/lib/postgresql/data
 ```
 
+Here is another minimal example for a Python Flask application:
+
+```yaml
+# .instantiate/config.yml
+expose_ports:
+  - service: app
+    port: 5000
+    name: FLASK_PORT
+```
+
+```yaml
+# .instantiate/docker-compose.yml
+services:
+  app:
+    build: .
+    command: python app.py
+    ports:
+      - "{{FLASK_PORT}}:5000"
+```
+
 ### 2. Set Up Instantiate
 
 To run Instantiate locally or on a server, you need to:
@@ -109,10 +136,8 @@ docker compose up -d
 | LOG_LEVEL                  | Default info                                   | Logging verbosity (info, warn, debug, error). Default is info.                             |
 | HOST_DOMAIN                | Default localhost                              | Public domain name or IP where Instantiate build stacks are accessible (e.g. localhost).   |
 | HOST_SCHEME                | Default http                                   | URL scheme to use (http or https). Used to build stack URLs.                               |
-| PORT_MIN                   | Default 10000                                  |
-Lower bound for dynamically allocated ports.           |
-| PORT_MAX                   | Default 11000                                  |
-Upper bound for dynamically allocated ports.           |
+| PORT_MIN                   | Default 10000                                  | Lower bound for dynamically allocated ports.           |
+| PORT_MAX                   | Default 11000                                  | Upper bound for dynamically allocated ports.           |
 | REPOSITORY_GITLAB_USERNAME | Required for private repositories              | GitLab username with access to the repositories being deployed (for private repositories). |
 | REPOSITORY_GITLAB_TOKEN    | Required for private repositories and comments | GitLab personal access token for commenting on merge requests.                             |
 | REPOSITORY_GITHUB_USERNAME | Required for private repositories              | GitHub username with access to the repositories being deployed (for private repositories). |
@@ -142,6 +167,67 @@ Each stack entry includes:
 This page offers a quick and human-friendly overview of all deployed environments, without requiring a separate frontend or dashboard service.
 
 ![Dashboard](./docs/dashboard.png)
+
+### 5. Deployment
+
+Instantiate itself is shipped as a Docker Compose stack. Copy the provided
+`docker-compose.yml` to your server and create a `.env` file based on
+`.env.example`.
+
+```bash
+cp .env.example .env
+# adjust values such as HOST_DOMAIN and repository credentials
+docker compose up -d
+```
+
+Running the services behind a reverse proxy (e.g. Traefik) lets you expose both
+the API and the ephemeral stacks under your own domain.
+
+#### Example Traefik configuration
+
+To route URLs of the form `{{merge request id}}-{{service name}}.domain.com` to
+the right container, declare labels in your stack template and enable the Docker
+provider:
+
+```yaml
+# .instantiate/docker-compose.yml
+services:
+  front:
+    build: .
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.front.rule=Host(`{{MR_ID}}-front.{{HOST_DOMAIN}}`)"
+      - "traefik.http.services.front.loadbalancer.server.port=3000"
+    ports:
+      - "{{FRONT_PORT}}:3000"
+  backend:
+    image: awesome/backend:latest
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.backend.rule=Host(`{{MR_ID}}-backend.{{HOST_DOMAIN}}`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=4200"
+    ports:
+      - "{{BACKEND_PORT}}:4200"
+```
+
+Add Traefik to your deployment stack:
+
+```yaml
+# docker-compose.override.yml
+services:
+  traefik:
+    image: traefik:v3.0
+    command:
+      - '--providers.docker=true'
+      - '--entrypoints.web.address=:80'
+    ports:
+      - '80:80'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+```
+
+With this configuration, a stack for merge request `42` exposes
+`http://42-front.<your-domain>` and `http://42-backend.<your-domain>`.
 
 ## Development
 
