@@ -131,11 +131,9 @@ describe('POST /api/update', () => {
   it("log l'erreur lorsque enqueueUpdateEvent echoue", () => {
     const logger = require('../../src/utils/logger').default
     jest.spyOn(logger, 'error').mockImplementation(() => {})
-    jest
-      .spyOn(require('../../src/mqtt/MQTTClient'), 'ensureMQTTClientIsInitialized')
-      .mockImplementation(() => {
-        throw new Error('fail')
-      })
+    jest.spyOn(require('../../src/mqtt/MQTTClient'), 'ensureMQTTClientIsInitialized').mockImplementation(() => {
+      throw new Error('fail')
+    })
 
     enqueueUpdateEvent({ payload: fakePayload, projectKey: 'key' })
 

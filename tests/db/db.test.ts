@@ -173,10 +173,7 @@ describe('db/index.ts', () => {
   it('removeStack supprime la stack', async () => {
     const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
     await db.removeStack('1', '2')
-    expect(mockPoolInstance.query).toHaveBeenCalledWith(
-      'DELETE FROM stacks WHERE project_id = $1 AND mr_id = $2',
-      ['1', '2']
-    )
+    expect(mockPoolInstance.query).toHaveBeenCalledWith('DELETE FROM stacks WHERE project_id = $1 AND mr_id = $2', ['1', '2'])
   })
 
   it('saveStack insère ou met à jour une stack', async () => {
@@ -206,9 +203,7 @@ describe('db/index.ts', () => {
 
     const result = await db.getAllStacks()
 
-    expect(mockPoolInstance.query).toHaveBeenCalledWith(
-      `SELECT * FROM stacks ORDER BY created_at DESC`
-    )
+    expect(mockPoolInstance.query).toHaveBeenCalledWith(`SELECT * FROM stacks ORDER BY created_at DESC`)
     expect(result).toEqual([
       {
         projectId: '1',

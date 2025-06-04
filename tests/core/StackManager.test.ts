@@ -251,7 +251,7 @@ describe('StackManager.deploy', () => {
     loggerSpy.mockRestore()
   })
 
-  it("log une erreur et retourne si le dossier temporaire ne peut pas être créé", async () => {
+  it('log une erreur et retourne si le dossier temporaire ne peut pas être créé', async () => {
     const stackManager = new StackManager()
     delete process.env.REPOSITORY_GITHUB_TOKEN
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }

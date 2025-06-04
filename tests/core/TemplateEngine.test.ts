@@ -44,12 +44,7 @@ describe('TemplateEngine', () => {
       '/output': {}
     })
 
-    await TemplateEngine.renderToFile(
-      '/input/template.yml',
-      '/output/result.yml',
-      { value: '<b>' },
-      false
-    )
+    await TemplateEngine.renderToFile('/input/template.yml', '/output/result.yml', { value: '<b>' }, false)
 
     const result = fs.readFileSync('/output/result.yml', 'utf-8')
     expect(result).toBe('<div><b></div>')
@@ -61,12 +56,7 @@ describe('TemplateEngine', () => {
       '/output': {}
     })
 
-    await TemplateEngine.renderToFile(
-      '/input/template.yml',
-      '/output/result.yml',
-      { value: '<b>' },
-      true
-    )
+    await TemplateEngine.renderToFile('/input/template.yml', '/output/result.yml', { value: '<b>' }, true)
 
     const result = fs.readFileSync('/output/result.yml', 'utf-8')
     expect(result).toBe('<div>&lt;b&gt;</div>')
