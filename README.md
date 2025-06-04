@@ -185,6 +185,29 @@ docker compose up -d
 Running the services behind a reverse proxy (e.g. Nginx, Traefik) allows you to
 expose the HTTP API and generated stack URLs under your own domain.
 
+#### Example Traefik configuration
+
+To proxy Instantiate with [Traefik](https://doc.traefik.io/), add a service to
+your Compose file:
+
+```yaml
+# docker-compose.override.yml
+services:
+  traefik:
+    image: traefik:v3.0
+    command:
+      - '--providers.docker=true'
+      - '--entrypoints.web.address=:80'
+    ports:
+      - '80:80'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+```
+
+Traefik will then forward `http://<your-domain>` to the `instantiate` service
+exposed on port 3000, while dynamic stack ports remain accessible on the same
+host.
+
 ## Development
 
 ```bash
