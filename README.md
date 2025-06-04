@@ -4,7 +4,11 @@
 
 ## Overview
 
-**Instantiate** is a DevTool for automatically provisioning full-stack development environments for Merge Requests (MRs). It detects the type of project in a Git repository, spins up ephemeral environments in containers, and exposes services with dynamic port management. It supports both GitHub and GitLab via webhook integrations and is designed to work across many tech stacks (Node.js, Java, Python, etc).
+**Instantiate** automatically provisions full-stack environments for each merge request (MR). By reading simple configuration files committed in your repository, it spins up disposable containers with all your services and exposes them on dynamic ports. It integrates with both GitHub and GitLab through webhooks and works for many technology stacks (Node.js, Java, Python, and more).
+
+### Why Instantiate?
+
+During code review, teams often struggle to reproduce the exact application stack of a branch. Instantiate removes that friction by instantly deploying an isolated environment for every MR. Reviewers can access running services through generated links, test new features in conditions close to production, and provide faster feedback. Once the MR is merged or closed, the environment is automatically destroyed, keeping resources tidy and ensuring reproducible testing.
 
 ---
 
@@ -48,9 +52,12 @@
 
 ## Usage
 
-### 1. Prepare Your Project
+### 1. Configure Your Repository
 
-Inside your Git repository:
+Instantiate relies on two files stored at the root of your repo under `.instantiate/`.
+`config.yml` declares which internal ports should be exposed while `docker-compose.yml`
+contains a template of the services to run. Below is a minimal example for a Node frontend
+talking to a backend service:
 
 ```yaml
 # .instantiate/config.yml
@@ -88,6 +95,26 @@ services:
       - POSTGRES_DB=database
     volumes:
       - db_data:/var/lib/postgresql/data
+```
+
+Here is another minimal example for a Python Flask application:
+
+```yaml
+# .instantiate/config.yml
+expose_ports:
+  - service: app
+    port: 5000
+    name: FLASK_PORT
+```
+
+```yaml
+# .instantiate/docker-compose.yml
+services:
+  app:
+    build: .
+    command: python app.py
+    ports:
+      - "{{FLASK_PORT}}:5000"
 ```
 
 ### 2. Set Up Instantiate
@@ -142,6 +169,21 @@ Each stack entry includes:
 This page offers a quick and human-friendly overview of all deployed environments, without requiring a separate frontend or dashboard service.
 
 ![Dashboard](./docs/dashboard.png)
+
+### 5. Deployment
+
+Instantiate itself is shipped as a Docker Compose stack. Copy the provided
+`docker-compose.yml` to your server and create a `.env` file based on
+`.env.example`.
+
+```bash
+cp .env.example .env
+# adjust values such as HOST_DOMAIN and repository credentials
+docker compose up -d
+```
+
+Running the services behind a reverse proxy (e.g. Nginx, Traefik) allows you to
+expose the HTTP API and generated stack URLs under your own domain.
 
 ## Development
 
