@@ -3,9 +3,17 @@ import logger from '../../src/utils/logger'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { GitHubCommenter } from '../../src/comments/GitHubCommenter'
 import { Response } from 'node-fetch'
+import db from '../../src/db'
 
 jest.mock('node-fetch')
 jest.mock('../../src/utils/logger')
+jest.mock('../../src/db', () => ({
+  __esModule: true,
+  default: {
+    getMergeRequestCommentId: jest.fn(),
+    setMergeRequestCommentId: jest.fn()
+  }
+}))
 
 const { Response: MockResponse } = jest.requireActual('node-fetch')
 
@@ -117,42 +125,27 @@ describe('GitHubCommenter', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
-    it("supprime d'abord un commentaire précédent, puis poste un nouveau commentaire", async () => {
-      const fakeComments = [{ id: 999, body: 'Some old comment <!-- instantiate-comment -->' }]
+    it('met à jour le commentaire existant s\u2019il est présent', async () => {
+      ;(db.getMergeRequestCommentId as jest.Mock).mockResolvedValueOnce('999')
+      mockFetch.mockResolvedValueOnce({ status: 200 } as Response)
 
-      mockFetch.mockResolvedValueOnce({
-        json: async () => fakeComments,
-        status: 200
-      } as Response)
+      await commenter.postStatusComment(fakePayload, 'in_progress')
 
-      mockFetch.mockResolvedValueOnce({
-        status: 204
-      } as Response)
-
-      mockFetch.mockResolvedValueOnce({
-        status: 201
-      } as Response)
-
-      await commenter.postStatusComment(fakePayload, 'in_progress', { link1: 'http://example.com' })
-
-      expect(mockFetch).toHaveBeenNthCalledWith(
-        2,
+      expect(mockFetch).toHaveBeenCalledWith(
         'https://api.github.com/repos/valcriss/test-repo/issues/comments/999',
-        expect.objectContaining({ method: 'DELETE' })
+        expect.objectContaining({ method: 'PATCH' })
       )
+      expect(db.setMergeRequestCommentId).not.toHaveBeenCalled()
+    })
 
-      expect(mockFetch).toHaveBeenNthCalledWith(
-        3,
-        'https://api.github.com/repos/valcriss/test-repo/issues/456/comments',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({
-            body: '<!-- instantiate-comment -->\n Deployment in progress...'
-          })
-        })
-      )
+    it('crée un commentaire puis sauvegarde son id s\u2019il est absent', async () => {
+      ;(db.getMergeRequestCommentId as jest.Mock).mockResolvedValueOnce(null)
+      mockFetch.mockResolvedValueOnce({ json: async () => ({ id: 888 }), status: 201 } as Response)
 
-      expect(logger.info).toHaveBeenCalledTimes(2)
+      await commenter.postStatusComment(fakePayload, 'ready')
+
+      expect(mockFetch).toHaveBeenCalledWith('https://api.github.com/repos/valcriss/test-repo/issues/456/comments', expect.objectContaining({ method: 'POST' }))
+      expect(db.setMergeRequestCommentId).toHaveBeenCalledWith('123', '456', '888')
     })
   })
 

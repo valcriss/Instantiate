@@ -25,6 +25,7 @@ export class StackManager {
     const commenter = CommentService.getCommenter(payload.provider)
     try {
       logger.info(`[stack] Starting the deployment of the stack for MR #${mrId}`)
+      await db.updateMergeRequest(payload, payload.status)
       await commenter.postStatusComment(payload, 'in_progress')
       // Nettoyage et préparation dossier temporaire
 

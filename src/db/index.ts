@@ -43,6 +43,16 @@ export default {
     }
     return map
   },
+  getMergeRequestCommentId: async (projectId: string, mrId: string) => {
+    const result = await pool.query('SELECT comment_id FROM merge_requests WHERE project_id = $1 AND mr_id = $2', [projectId, mrId])
+    if (result.rows.length > 0) {
+      return result.rows[0].comment_id as string | null
+    }
+    return null
+  },
+  setMergeRequestCommentId: async (projectId: string, mrId: string, commentId: string) => {
+    await pool.query('UPDATE merge_requests SET comment_id = $3 WHERE project_id = $1 AND mr_id = $2', [projectId, mrId, commentId])
+  },
   updateMergeRequest: async (payload: MergeRequestPayload, state: string) => {
     await pool.query(
       `
