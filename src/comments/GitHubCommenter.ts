@@ -2,6 +2,7 @@ import fetch from 'node-fetch'
 import logger from '../utils/logger'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import { COMMENT_SIGNATURE, generateComment } from './CommentService'
+import db from '../db'
 
 type GithubComment = {
   id: number
@@ -65,20 +66,31 @@ export class GitHubCommenter {
       logger.warn('[github-comment] Github token not found, skipping comment')
       return
     }
-    await this.removePreviousStatusComment(payload)
     const repo = payload.full_name
     const prNumber = payload.mr_iid
-    const body = { body: generateComment(status, links) }
     const owner = this.getGitHubOwnerFromProjectUrl(repo)
     const repository = this.getGitHubRepositoryFromProjectUrl(repo)
+    const body = { body: generateComment(status, links) }
 
-    await fetch(`https://api.github.com/repos/${owner}/${repository}/issues/${prNumber}/comments`, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(body)
-    })
+    const existing = await db.getMergeRequestCommentId(payload.project_id, payload.mr_id)
 
-    logger.info(`[github-comment] Posted ${status} comment for MR #${prNumber}`)
+    if (existing) {
+      await fetch(`https://api.github.com/repos/${owner}/${repository}/issues/comments/${existing}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(body)
+      })
+      logger.info(`[github-comment] Updated ${status} comment for MR #${prNumber}`)
+    } else {
+      const response = await fetch(`https://api.github.com/repos/${owner}/${repository}/issues/${prNumber}/comments`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+      })
+      const result = (await response.json()) as { id: number }
+      await db.setMergeRequestCommentId(payload.project_id, payload.mr_id, result.id.toString())
+      logger.info(`[github-comment] Posted ${status} comment for MR #${prNumber}`)
+    }
   }
 
   getGitHubOwnerFromProjectUrl(projectUrl: string): string {

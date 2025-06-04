@@ -2,6 +2,7 @@ import fetch from 'node-fetch'
 import logger from '../utils/logger'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import { COMMENT_SIGNATURE, generateComment } from './CommentService'
+import db from '../db'
 
 type GitLabComment = {
   id: string
@@ -92,23 +93,37 @@ export class GitLabCommenter {
       logger.warn('[gitlab-comment] GitLab token not found, skipping comment')
       return
     }
-    await this.removePreviousStatusComment(payload)
     const projectId = payload.project_id
     const mrIid = payload.mr_iid
-    const body = { body: generateComment(status, links), id: projectId, merge_request_iid: mrIid }
+    const bodyContent = generateComment(status, links)
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(payload.repo)
 
-    const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes`
-    const agent = this.getAgent(url)
+    const existing = await db.getMergeRequestCommentId(projectId, payload.mr_id)
 
-    await fetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify(body),
-      agent
-    })
-
-    logger.info(`[gitlab-comment] Posted ${status} comment for MR !${mrIid}`)
+    if (existing) {
+      const updateUrl = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes/${existing}`
+      const agent = this.getAgent(updateUrl)
+      await fetch(updateUrl, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ body: bodyContent }),
+        agent
+      })
+      logger.info(`[gitlab-comment] Updated ${status} comment for MR !${mrIid}`)
+    } else {
+      const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes`
+      const agent = this.getAgent(url)
+      const body = { body: bodyContent, id: projectId, merge_request_iid: mrIid }
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+        agent
+      })
+      const result = (await response.json()) as GitLabComment
+      await db.setMergeRequestCommentId(projectId, payload.mr_id, result.id)
+      logger.info(`[gitlab-comment] Posted ${status} comment for MR !${mrIid}`)
+    }
   }
 
   getGitLabApiUrlFromProjectUrl(projectUrl: string): string {

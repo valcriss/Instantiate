@@ -138,4 +138,18 @@ describe('db/index.ts', () => {
 
     expect(mockPoolInstance.query).toHaveBeenCalledWith(`DELETE FROM exposed_ports WHERE project_id = $1 AND mr_id = $2`, [projectId, mrId])
   })
+
+  it("getMergeRequestCommentId retourne l'id du commentaire", async () => {
+    const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
+    mockPoolInstance.query.mockResolvedValueOnce({ rows: [{ comment_id: '10' }] })
+    const id = await db.getMergeRequestCommentId('1', '2')
+    expect(mockPoolInstance.query).toHaveBeenCalledWith('SELECT comment_id FROM merge_requests WHERE project_id = $1 AND mr_id = $2', ['1', '2'])
+    expect(id).toBe('10')
+  })
+
+  it('setMergeRequestCommentId met à jour le commentaire', async () => {
+    const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
+    await db.setMergeRequestCommentId('1', '2', '3')
+    expect(mockPoolInstance.query).toHaveBeenCalledWith('UPDATE merge_requests SET comment_id = $3 WHERE project_id = $1 AND mr_id = $2', ['1', '2', '3'])
+  })
 })

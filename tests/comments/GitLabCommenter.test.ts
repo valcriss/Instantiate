@@ -3,9 +3,17 @@ import logger from '../../src/utils/logger'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { GitLabCommenter } from '../../src/comments/GitLabCommenter'
 import { COMMENT_SIGNATURE, generateComment } from '../../src/comments/CommentService'
+import db from '../../src/db'
 
 jest.mock('node-fetch')
 jest.mock('../../src/utils/logger')
+jest.mock('../../src/db', () => ({
+  __esModule: true,
+  default: {
+    getMergeRequestCommentId: jest.fn(),
+    setMergeRequestCommentId: jest.fn()
+  }
+}))
 
 describe('GitLabCommenter', () => {
   let commenter: GitLabCommenter
@@ -160,25 +168,32 @@ describe('GitLabCommenter', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
-    it('posts a status comment to the API', async () => {
+    it('updates existing comment when id is present', async () => {
+      ;(db.getMergeRequestCommentId as jest.Mock).mockResolvedValueOnce('1')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockFetch.mockResolvedValueOnce({ status: 204 } as any) // Mock delete comment response
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      mockFetch.mockResolvedValueOnce({ status: 201 } as any) // Mock post comment response
-      await commenter.postStatusComment(fakePayload, 'in_progress', { link: 'http://example.com' })
+      mockFetch.mockResolvedValueOnce({ status: 200 } as any)
 
-      expect(mockFetch).toHaveBeenNthCalledWith(
-        2, // Ensure we are checking the second call
-        'https://gitlab.example.com/api/v4/projects/123/merge_requests/456/notes',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({
-            body: '<!-- instantiate-comment -->\n Deployment in progress...',
-            id: '123',
-            merge_request_iid: '456'
-          })
-        })
+      await commenter.postStatusComment(fakePayload, 'in_progress')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://gitlab.example.com/api/v4/projects/123/merge_requests/456/notes/1',
+        expect.objectContaining({ method: 'PUT' })
       )
+      expect(db.setMergeRequestCommentId).not.toHaveBeenCalled()
+    })
+
+    it('creates comment and saves id when none exists', async () => {
+      ;(db.getMergeRequestCommentId as jest.Mock).mockResolvedValueOnce(null)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      mockFetch.mockResolvedValueOnce({ json: jest.fn().mockResolvedValue({ id: '2' }), status: 201 } as any)
+
+      await commenter.postStatusComment(fakePayload, 'ready')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://gitlab.example.com/api/v4/projects/123/merge_requests/456/notes',
+        expect.objectContaining({ method: 'POST' })
+      )
+      expect(db.setMergeRequestCommentId).toHaveBeenCalledWith('123', '456', '2')
     })
   })
 })
