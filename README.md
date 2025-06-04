@@ -182,13 +182,37 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Running the services behind a reverse proxy (e.g. Nginx, Traefik) allows you to
-expose the HTTP API and generated stack URLs under your own domain.
+Running the services behind a reverse proxy (e.g. Traefik) lets you expose both
+the API and the ephemeral stacks under your own domain.
 
 #### Example Traefik configuration
 
-To proxy Instantiate with [Traefik](https://doc.traefik.io/), add a service to
-your Compose file:
+To route URLs of the form `{{merge request id}}-{{service name}}.domain.com` to
+the right container, declare labels in your stack template and enable the Docker
+provider:
+
+```yaml
+# .instantiate/docker-compose.yml
+services:
+  front:
+    build: .
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.front.rule=Host(`{{MR_ID}}-front.{{HOST_DOMAIN}}`)"
+      - "traefik.http.services.front.loadbalancer.server.port=3000"
+    ports:
+      - "{{FRONT_PORT}}:3000"
+  backend:
+    image: awesome/backend:latest
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.backend.rule=Host(`{{MR_ID}}-backend.{{HOST_DOMAIN}}`)"
+      - "traefik.http.services.backend.loadbalancer.server.port=4200"
+    ports:
+      - "{{BACKEND_PORT}}:4200"
+```
+
+Add Traefik to your deployment stack:
 
 ```yaml
 # docker-compose.override.yml
@@ -204,9 +228,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 ```
 
-Traefik will then forward `http://<your-domain>` to the `instantiate` service
-exposed on port 3000, while dynamic stack ports remain accessible on the same
-host.
+With this configuration, a stack for merge request `42` exposes
+`http://42-front.<your-domain>` and `http://42-backend.<your-domain>`.
 
 ## Development
 
