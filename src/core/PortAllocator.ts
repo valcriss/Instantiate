@@ -1,10 +1,17 @@
 import db from '../db'
 import logger from '../utils/logger'
 
-const PORT_MIN = 10000
-const PORT_MAX = 11000
+const DEFAULT_PORT_MIN = 10000
+const DEFAULT_PORT_MAX = 11000
 
 export class PortAllocator {
+  private static get portMin(): number {
+    return parseInt(process.env.PORT_MIN ?? DEFAULT_PORT_MIN.toString(), 10)
+  }
+
+  private static get portMax(): number {
+    return parseInt(process.env.PORT_MAX ?? DEFAULT_PORT_MAX.toString(), 10)
+  }
   static async allocatePort(projectId: string, mrId: string, service: string, name: string, internalPort: number): Promise<number> {
     const alreadyAllocatedPort = await db.allreadyAllocatedPort(projectId, mrId, service, name)
     if (alreadyAllocatedPort) {
@@ -12,7 +19,9 @@ export class PortAllocator {
       return alreadyAllocatedPort
     }
     const usedPorts = await db.getUsedPorts()
-    for (let port = PORT_MIN; port <= PORT_MAX; port++) {
+    const min = PortAllocator.portMin
+    const max = PortAllocator.portMax
+    for (let port = min; port <= max; port++) {
       if (!usedPorts.has(port)) {
         await db.addExposedPorts(projectId, mrId, service, name, internalPort, port)
         logger.info(`[port] Port allocated : ${port} for ${service} ${name} (MR:${mrId})`)

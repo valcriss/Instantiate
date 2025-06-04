@@ -8,8 +8,20 @@ jest.mock('../../src/db')
 describe('PortAllocator', () => {
   const mockDb = db as jest.Mocked<typeof db>
 
+  const originalPortMin = process.env.PORT_MIN
+  const originalPortMax = process.env.PORT_MAX
+
   beforeEach(() => {
     jest.clearAllMocks()
+    delete process.env.PORT_MIN
+    delete process.env.PORT_MAX
+  })
+
+  afterEach(() => {
+    if (originalPortMin !== undefined) process.env.PORT_MIN = originalPortMin
+    else delete process.env.PORT_MIN
+    if (originalPortMax !== undefined) process.env.PORT_MAX = originalPortMax
+    else delete process.env.PORT_MAX
   })
 
   afterAll(async () => {
@@ -19,7 +31,6 @@ describe('PortAllocator', () => {
 
   it('attribue le premier port disponible dans la plage', async () => {
     mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
-
     mockDb.getUsedPorts.mockResolvedValueOnce(new Set([10000, 10001]))
 
     const port = await PortAllocator.allocatePort('valcriss', 'mr-1', 'web', 'WEB_PORT', 3000)
@@ -30,7 +41,7 @@ describe('PortAllocator', () => {
 
   it('ignore les ports déjà utilisés', async () => {
     mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
-    mockDb.getUsedPorts.mockResolvedValueOnce(new Set([10000, 10001])) // insert sur 10002
+    mockDb.getUsedPorts.mockResolvedValueOnce(new Set([10000, 10001]))
 
     const port = await PortAllocator.allocatePort('valcriss', 'mr-2', 'api', 'API_PORT', 8000)
     expect(port).toBe(10002)
@@ -41,8 +52,10 @@ describe('PortAllocator', () => {
     mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
 
     // Mock pour getUsedPorts
+    const min = Number(process.env.PORT_MIN ?? '10000')
+    const max = Number(process.env.PORT_MAX ?? '11000')
     const used: number[] = []
-    for (let p = 10000; p <= 11000; p++) used.push(p)
+    for (let p = min; p <= max; p++) used.push(p)
     mockDb.getUsedPorts.mockResolvedValueOnce(new Set(used))
 
     await expect(PortAllocator.allocatePort('valcriss', 'mr-3', 'db', 'BD_PORT', 5432)).rejects.toThrow('There is no available port')
@@ -66,5 +79,17 @@ describe('PortAllocator', () => {
 
     expect(port).toBe(10005)
     expect(mockDb.allreadyAllocatedPort).toHaveBeenCalledWith('valcriss', 'mr-4', 'cache', 'CACHE_PORT')
+  })
+
+  it("utilise les variables d'environnement PORT_MIN et PORT_MAX", async () => {
+    process.env.PORT_MIN = '20000'
+    process.env.PORT_MAX = '20005'
+    mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
+    mockDb.getUsedPorts.mockResolvedValueOnce(new Set([20000, 20001]))
+
+    const port = await PortAllocator.allocatePort('valcriss', 'mr-env', 'svc', 'SVC_PORT', 1234)
+
+    expect(port).toBe(20002)
+    expect(mockDb.addExposedPorts).toHaveBeenCalledWith('valcriss', 'mr-env', 'svc', 'SVC_PORT', 1234, 20002)
   })
 })
