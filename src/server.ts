@@ -4,6 +4,7 @@ import logger from './utils/logger'
 import updateRoute from './api/update'
 import stacksApiRoute from './api/stacksApi'
 import stacksPageRoute from './pages/stacksPage'
+import { startHealthChecker } from './health/HealthChecker'
 
 logger.info('[server] Server is starting...')
 
@@ -24,3 +25,5 @@ const PORT = process.env.PORT ?? 3000
 app.listen(PORT, () => {
   logger.info(`[server] Server running on port ${PORT}`)
 })
+
+startHealthChecker()
