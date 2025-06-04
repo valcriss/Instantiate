@@ -27,4 +27,8 @@ export class StackService {
   static async getAll(): Promise<StackInfo[]> {
     return await db.getAllStacks()
   }
+
+  static async updateStatus(projectId: string, mrId: string, status: StackStatus): Promise<void> {
+    await db.updateStackStatus(projectId, mrId, status)
+  }
 }

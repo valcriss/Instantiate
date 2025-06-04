@@ -13,7 +13,7 @@ WORKDIR /app
 COPY . /app/
 
 # Installer uniquement les dépendances de production
-RUN npm install --global pm2 && npm install --global bun && cd /app && npm ci && npm run build && npm cache clean --force
+RUN npm install --global pm2 && cd /app && npm ci && npm run build && npm cache clean --force
 
 # Rendre le script d'entrée exécutable
 RUN chmod +x /app/docker/entrypoint.sh
