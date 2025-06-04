@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">81.25% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>26/32</span>
+                <span class='fraction'>32/32</span>
             </div>
         
             
@@ -37,16 +37,16 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">73.33% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>11/15</span>
+                <span class='fraction'>15/15</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">83.33% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>25/30</span>
+                <span class='fraction'>30/30</span>
             </div>
         
             
@@ -222,12 +222,9 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -235,24 +232,12 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -270,11 +255,26 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -339,7 +339,7 @@ export default {
     if (result.rows.length &gt; 0) {
       return result.rows[0].comment_id as string | null
     }
-<span class="cstat-no" title="statement not covered" >    return null</span>
+    return null
   },
   setMergeRequestCommentId: async (projectId: string, mrId: string, commentId: string) =&gt; {
     await pool.query('UPDATE merge_requests SET comment_id = $3 WHERE project_id = $1 AND mr_id = $2', [projectId, mrId, commentId])
@@ -355,7 +355,7 @@ export default {
       [payload.project_id, payload.mr_id, payload.projectName, payload.mergeRequestName, payload.repo, payload.status]
     )
   },
-  saveStack: <span class="fstat-no" title="function not covered" >async </span>(
+  saveStack: async (
     projectId: string,
     mrId: string,
     projectName: string,
@@ -365,7 +365,7 @@ export default {
     status: string,
     links: Record&lt;string, string&gt;
   ) =&gt; {
-<span class="cstat-no" title="statement not covered" >    await pool.query(</span>
+    await pool.query(
       `
       INSERT INTO stacks (project_id, mr_id, project_name, merge_request_name, ports, provider, status, links, created_at, updated_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
@@ -382,12 +382,12 @@ export default {
   updateStackStatus: async (projectId: string, mrId: string, status: string) =&gt; {
     await pool.query(`UPDATE stacks SET status = $3, updated_at = now() WHERE project_id = $1 AND mr_id = $2`, [projectId, mrId, status])
   },
-  removeStack: <span class="fstat-no" title="function not covered" >async </span>(projectId: string, mrId: string) =&gt; {
-<span class="cstat-no" title="statement not covered" >    await pool.query(`DELETE FROM stacks WHERE project_id = $1 AND mr_id = $2`, [projectId, mrId])</span>
+  removeStack: async (projectId: string, mrId: string) =&gt; {
+    await pool.query(`DELETE FROM stacks WHERE project_id = $1 AND mr_id = $2`, [projectId, mrId])
   },
-  getAllStacks: <span class="fstat-no" title="function not covered" >async </span>() =&gt; {
-    const result = <span class="cstat-no" title="statement not covered" >await pool.query(`SELECT * FROM stacks ORDER BY created_at DESC`)</span>
-<span class="cstat-no" title="statement not covered" >    return result.rows.map(<span class="fstat-no" title="function not covered" >(r</span>ow) =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
+  getAllStacks: async () =&gt; {
+    const result = await pool.query(`SELECT * FROM stacks ORDER BY created_at DESC`)
+    return result.rows.map((row) =&gt; ({
       projectId: row.project_id,
       mr_id: row.mr_id,
       projectName: row.project_name,
@@ -409,7 +409,7 @@ export default {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-06-04T23:28:52.219Z
+                at 2025-06-04T23:46:48.333Z
             </div>
         <script src="../prettify.js"></script>
         <script>
