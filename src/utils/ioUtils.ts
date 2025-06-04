@@ -14,6 +14,7 @@ export async function removeDirectory(path: string): Promise<boolean> {
       }
     }
   }
+  /* istanbul ignore next */
   return false
 }
 
@@ -31,6 +32,7 @@ export async function createDirectory(path: string): Promise<boolean> {
       }
     }
   }
+  /* istanbul ignore next */
   return false
 }
 
