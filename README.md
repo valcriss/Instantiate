@@ -19,7 +19,7 @@ During code review, teams often struggle to reproduce the exact application stac
 - 🌐 GitHub and GitLab webhook integration
 - 📉 Dynamic port allocation with collision prevention
 - 🛠️ Live build and runtime logs
-- ⚡ **(not yet implemented)** Healthcheck and status tracking for deployed services
+- ⚡ Healthcheck and status tracking for deployed services
 - ❌ Automatic teardown when MRs are closed
 - 🚀 Async processing via MQTT queue
 
