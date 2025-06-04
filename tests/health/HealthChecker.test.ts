@@ -50,7 +50,7 @@ describe('HealthChecker', () => {
       const stacks: StackInfo[] = [
         { projectId: '1', mr_id: '2', projectName: '', mergeRequestName: '', ports: {}, provider: 'github', status: 'running', links: {} }
       ]
-      mockedStackService.getAll.mockResolvedValueOnce(stacks as any)
+      mockedStackService.getAll.mockResolvedValueOnce(stacks)
       mockedExeca.mockResolvedValueOnce({ stdout: '' })
       await HealthChecker.checkAllStacks()
       expect(mockedStackService.updateStatus).toHaveBeenCalledWith('1', '2', 'error')
@@ -60,7 +60,7 @@ describe('HealthChecker', () => {
       const stacks: StackInfo[] = [
         { projectId: '1', mr_id: '2', projectName: '', mergeRequestName: '', ports: {}, provider: 'github', status: 'running', links: {} }
       ]
-      mockedStackService.getAll.mockResolvedValueOnce(stacks as any)
+      mockedStackService.getAll.mockResolvedValueOnce(stacks)
       mockedExeca.mockResolvedValueOnce({ stdout: 'running' })
       await HealthChecker.checkAllStacks()
       expect(mockedStackService.updateStatus).not.toHaveBeenCalled()

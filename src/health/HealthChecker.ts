@@ -6,13 +6,7 @@ export class HealthChecker {
   static async checkStack(stack: StackInfo): Promise<StackStatus> {
     const projectName = `${stack.projectId}-mr-${stack.mr_id}`
     try {
-      const { stdout } = await execa('docker', [
-        'ps',
-        '--filter',
-        `label=com.docker.compose.project=${projectName}`,
-        '--format',
-        '{{.State}}'
-      ])
+      const { stdout } = await execa('docker', ['ps', '--filter', `label=com.docker.compose.project=${projectName}`, '--format', '{{.State}}'])
       if (!stdout) {
         return 'error'
       }

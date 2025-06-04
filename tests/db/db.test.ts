@@ -156,9 +156,10 @@ describe('db/index.ts', () => {
   it('updateStackStatus met à jour le statut', async () => {
     const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
     await db.updateStackStatus('1', '2', 'running')
-    expect(mockPoolInstance.query).toHaveBeenCalledWith(
-      'UPDATE stacks SET status = $3, updated_at = now() WHERE project_id = $1 AND mr_id = $2',
-      ['1', '2', 'running']
-    )
+    expect(mockPoolInstance.query).toHaveBeenCalledWith('UPDATE stacks SET status = $3, updated_at = now() WHERE project_id = $1 AND mr_id = $2', [
+      '1',
+      '2',
+      'running'
+    ])
   })
 })

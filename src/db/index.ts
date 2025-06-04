@@ -89,10 +89,7 @@ export default {
     )
   },
   updateStackStatus: async (projectId: string, mrId: string, status: string) => {
-    await pool.query(
-      `UPDATE stacks SET status = $3, updated_at = now() WHERE project_id = $1 AND mr_id = $2`,
-      [projectId, mrId, status]
-    )
+    await pool.query(`UPDATE stacks SET status = $3, updated_at = now() WHERE project_id = $1 AND mr_id = $2`, [projectId, mrId, status])
   },
   removeStack: async (projectId: string, mrId: string) => {
     await pool.query(`DELETE FROM stacks WHERE project_id = $1 AND mr_id = $2`, [projectId, mrId])
