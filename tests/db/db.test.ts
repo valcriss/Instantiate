@@ -162,4 +162,66 @@ describe('db/index.ts', () => {
       'running'
     ])
   })
+
+  it("getMergeRequestCommentId retourne null lorsqu'aucun commentaire n'existe", async () => {
+    const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
+    mockPoolInstance.query.mockResolvedValueOnce({ rows: [] })
+    const id = await db.getMergeRequestCommentId('1', '2')
+    expect(id).toBeNull()
+  })
+
+  it('removeStack supprime la stack', async () => {
+    const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
+    await db.removeStack('1', '2')
+    expect(mockPoolInstance.query).toHaveBeenCalledWith(
+      'DELETE FROM stacks WHERE project_id = $1 AND mr_id = $2',
+      ['1', '2']
+    )
+  })
+
+  it('saveStack insère ou met à jour une stack', async () => {
+    const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
+    await db.saveStack('1', '2', 'p', 'mr', { http: 80 }, 'github', 'running', { self: 'x' })
+    expect(mockPoolInstance.query).toHaveBeenCalled()
+  })
+
+  it('getAllStacks retourne toutes les stacks formatées', async () => {
+    const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
+    const now = new Date()
+    const rows = [
+      {
+        project_id: '1',
+        mr_id: '2',
+        project_name: 'p',
+        merge_request_name: 'mr',
+        ports: { http: 80 },
+        provider: 'github',
+        status: 'running',
+        links: { self: 'x' },
+        updated_at: now,
+        created_at: now
+      }
+    ]
+    mockPoolInstance.query.mockResolvedValueOnce({ rows })
+
+    const result = await db.getAllStacks()
+
+    expect(mockPoolInstance.query).toHaveBeenCalledWith(
+      `SELECT * FROM stacks ORDER BY created_at DESC`
+    )
+    expect(result).toEqual([
+      {
+        projectId: '1',
+        mr_id: '2',
+        projectName: 'p',
+        mergeRequestName: 'mr',
+        ports: { http: 80 },
+        provider: 'github',
+        status: 'running',
+        links: { self: 'x' },
+        updatedAt: now.toISOString(),
+        createdAt: now.toISOString()
+      }
+    ])
+  })
 })

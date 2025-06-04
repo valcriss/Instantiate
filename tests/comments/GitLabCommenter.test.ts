@@ -117,6 +117,38 @@ describe('GitLabCommenter', () => {
       expect(comments).toEqual([])
       expect(logger.warn).toHaveBeenCalledWith('[gitlab-comment] GitLab token not valid, unable to read comments')
     })
+
+    it('returns empty array and warns when json method is missing', async () => {
+      mockFetch.mockResolvedValueOnce({ status: 200 } as any)
+      const comments = await (commenter as GitLabCommenter).getComments('https://gitlab.example.com', '123', '456')
+      expect(comments).toEqual([])
+      expect(logger.warn).toHaveBeenCalledWith('[gitlab-comment] Unexpected response format, unable to parse comments')
+    })
+
+    it('returns empty array and warns when json result is not array', async () => {
+      mockFetch.mockResolvedValueOnce({
+        status: 200,
+        json: jest.fn().mockResolvedValue({})
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
+      const comments = await (commenter as GitLabCommenter).getComments('https://gitlab.example.com', '123', '456')
+      expect(comments).toEqual([])
+      expect(logger.warn).toHaveBeenCalledWith('[gitlab-comment] Unexpected response format, unable to filter comments')
+    })
+  })
+
+  describe('getAgent', () => {
+    it('returns https.Agent when ignoring ssl errors', () => {
+      process.env.IGNORE_SSL_ERRORS = 'true'
+      const agent = commenter.getAgent('https://gitlab.example.com')
+      expect(agent).toBeInstanceOf(require('https').Agent)
+    })
+
+    it('returns undefined when http or flag not set', () => {
+      process.env.IGNORE_SSL_ERRORS = ''
+      const agent = commenter.getAgent('http://gitlab.example.com')
+      expect(agent).toBeUndefined()
+    })
   })
 
   describe('deleteComment', () => {

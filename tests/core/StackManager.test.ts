@@ -10,6 +10,7 @@ import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { PathLike, Stats } from 'fs'
 import logger, { closeLogger } from '../../src/utils/logger'
 import { closeConnection } from '../../src/mqtt/MQTTClient'
+import * as ioUtils from '../../src/utils/ioUtils'
 
 jest.mock('simple-git')
 jest.mock('fs/promises')
@@ -247,6 +248,25 @@ describe('StackManager.deploy', () => {
     expect(mockDocker.up).not.toHaveBeenCalled()
     expect(mockDb.addExposedPorts).not.toHaveBeenCalled()
 
+    loggerSpy.mockRestore()
+  })
+
+  it("log une erreur et retourne si le dossier temporaire ne peut pas être créé", async () => {
+    const stackManager = new StackManager()
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+    jest.spyOn(ioUtils, 'createDirectory').mockResolvedValueOnce(false)
+    jest.spyOn(ioUtils, 'removeDirectory').mockResolvedValueOnce(true)
+    mockFs.stat.mockResolvedValue({} as Stats)
+    const loggerSpy = jest.spyOn(logger, 'error').mockImplementation(() => {})
+
+    const result = await stackManager.deploy(payload, projectKey)
+
+    expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Unable to create directory'))
+    expect(result).toBeUndefined()
+    expect(fakeGit.clone).not.toHaveBeenCalled()
     loggerSpy.mockRestore()
   })
 })

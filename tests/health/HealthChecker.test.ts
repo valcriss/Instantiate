@@ -43,6 +43,15 @@ describe('HealthChecker', () => {
       const status = await HealthChecker.checkStack(stack)
       expect(status).toBe('error')
     })
+
+    it('returns error and logs when execa throws', async () => {
+      const logger = await import('../../src/utils/logger')
+      jest.spyOn(logger.default, 'error').mockImplementation(jest.fn())
+      mockedExeca.mockRejectedValueOnce(new Error('boom'))
+      const status = await HealthChecker.checkStack(stack)
+      expect(status).toBe('error')
+      expect(logger.default.error).toHaveBeenCalled()
+    })
   })
 
   describe('checkAllStacks', () => {
@@ -64,6 +73,19 @@ describe('HealthChecker', () => {
       mockedExeca.mockResolvedValueOnce({ stdout: 'running' })
       await HealthChecker.checkAllStacks()
       expect(mockedStackService.updateStatus).not.toHaveBeenCalled()
+    })
+
+    it('startHealthChecker lance la boucle et log en cas derreur', async () => {
+      jest.useFakeTimers()
+      const logger = await import('../../src/utils/logger')
+      jest.spyOn(logger.default, 'error').mockImplementation(jest.fn())
+      jest.spyOn(HealthChecker, 'checkAllStacks').mockRejectedValueOnce(new Error('oops'))
+      const { startHealthChecker } = await import('../../src/health/HealthChecker')
+      startHealthChecker(10)
+      jest.advanceTimersByTime(10)
+      await Promise.resolve()
+      expect(logger.default.error).toHaveBeenCalled()
+      jest.useRealTimers()
     })
   })
 })

@@ -2,6 +2,7 @@ import request from 'supertest'
 import express from 'express'
 
 import updateRoute from '../../src/api/update'
+import { enqueueUpdateEvent } from '../../src/api/update'
 import * as github from '../../src/providers/github'
 import * as gitlab from '../../src/providers/gitlab'
 import { StackManager } from '../../src/core/StackManager'
@@ -125,5 +126,19 @@ describe('POST /api/update', () => {
 
     expect(res.status).toBe(500)
     expect(res.body.error).toMatch(/Internal error/)
+  })
+
+  it("log l'erreur lorsque enqueueUpdateEvent echoue", () => {
+    const logger = require('../../src/utils/logger').default
+    jest.spyOn(logger, 'error').mockImplementation(() => {})
+    jest
+      .spyOn(require('../../src/mqtt/MQTTClient'), 'ensureMQTTClientIsInitialized')
+      .mockImplementation(() => {
+        throw new Error('fail')
+      })
+
+    enqueueUpdateEvent({ payload: fakePayload, projectKey: 'key' })
+
+    expect(logger.error).toHaveBeenCalledWith('[api] Failed to enqueue update event')
   })
 })
