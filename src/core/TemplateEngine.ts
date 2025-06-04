@@ -12,9 +12,9 @@ export class TemplateEngine {
    * @param escapeHtml Si true, les variables seront échappées pour éviter les injections de code
    */
   static async renderToFile(inputPath: string, outputPath: string, context: Record<string, unknown>, escapeHtml: boolean = false): Promise<void> {
+    const originalEscape = mustache.escape
     try {
       // Sauvegarder le comportement d'échappement original
-      const originalEscape = mustache.escape
 
       // Si escapeHtml est false, désactiver l'échappement
       if (!escapeHtml) {
@@ -24,15 +24,15 @@ export class TemplateEngine {
       const template = await fs.readFile(inputPath, 'utf-8')
       const result = mustache.render(template, context)
 
-      // Restaurer le comportement d'échappement original
-      mustache.escape = originalEscape
-
       await fs.mkdir(path.dirname(outputPath), { recursive: true })
       await fs.writeFile(outputPath, result, 'utf-8')
       logger.info(`[template] Template rendered in ${outputPath}`)
     } catch (err) {
       logger.error(`[template] Error while rendering the template ${inputPath}`)
       throw err
+    } finally {
+      // Restaurer le comportement d'échappement original
+      mustache.escape = originalEscape
     }
   }
 }
