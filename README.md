@@ -117,6 +117,18 @@ services:
       - "{{FLASK_PORT}}:5000"
 ```
 
+### Template variables
+
+The **StackManager** injects several placeholders in your Compose template.
+They are substituted by the **TemplateEngine** right before running
+`docker compose up`.
+
+- `{{MR_ID}}` – the merge request or pull request identifier
+- `{{PROJECT_KEY}}` – the project key used when calling Instantiate
+- `{{HOST_DNS}}` – the scheme and domain where stacks are reachable
+- any port variables defined under `expose_ports` in `.instantiate/config.yml`
+  (for example `{{FRONT_PORT}}`)
+
 ### 2. Set Up Instantiate
 
 To run Instantiate locally or on a server, you need to:
