@@ -142,6 +142,9 @@ docker compose up -d
 | REPOSITORY_GITLAB_TOKEN    | Required for private repositories and comments | GitLab personal access token for commenting on merge requests.                             |
 | REPOSITORY_GITHUB_USERNAME | Required for private repositories              | GitHub username with access to the repositories being deployed (for private repositories). |
 | REPOSITORY_GITHUB_TOKEN    | Required for private repositories and comments | GitHub personal access token for commenting on merge requests                              |
+| DATABASE_URL               | Default postgresql://instantiate:instantiate@localhost:5432/instantiate | PostgreSQL connection string used by Instantiate |
+| MQTT_BROKER_URL            | Default mqtt://localhost:1883                 | Address of the MQTT broker used for asynchronous processing |
+| IGNORE_SSL_ERRORS          | Default false                                  | Set to `true` to disable SSL verification for Git operations and HTTP requests |
 
 
 ### 3. Configure Webhooks
