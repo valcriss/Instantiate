@@ -125,6 +125,24 @@ describe('StackManager.deploy', () => {
     )
   })
 
+  it("utilise simpleGit avec l'option sslVerify=false quand IGNORE_SSL_ERRORS est a true", async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    process.env.IGNORE_SSL_ERRORS = 'true'
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockYaml.parse.mockReturnValue({})
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.up.mockResolvedValue()
+
+    await stackManager.deploy(payload, projectKey)
+
+    expect(mockGit).toHaveBeenCalledWith({ config: ['http.sslVerify=false'] })
+    process.env.IGNORE_SSL_ERRORS = ''
+  })
+
   it('log et relance une erreur si une étape échoue (ex: substitution template)', async () => {
     const stackManager = new StackManager()
     delete process.env.REPOSITORY_GITHUB_TOKEN

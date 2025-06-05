@@ -88,7 +88,7 @@ describe('HealthChecker', () => {
       jest.useRealTimers()
     })
 
-    it('startHealthChecker utilise la valeur par defaut de l\'intervalle', async () => {
+    it("startHealthChecker utilise la valeur par defaut de l'intervalle", async () => {
       jest.useFakeTimers()
       jest.spyOn(HealthChecker, 'checkAllStacks').mockResolvedValueOnce()
       const { startHealthChecker } = await import('../../src/health/HealthChecker')
