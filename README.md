@@ -240,6 +240,24 @@ npm run test           # Run tests
 npm run test:coverage  # Run tests with coverage
 ```
 
+## End-to-end testing
+
+You can quickly try Instantiate locally by running both the API and a GitLab
+instance with Docker Compose:
+
+```bash
+# Start the API and its dependencies
+docker compose -f docker-compose.dev.yml up -d
+
+# In another terminal, launch GitLab
+docker compose -f docker-compose.gitlab.yml up -d
+```
+
+After GitLab is ready, create a test project and add a webhook pointing to
+`http://localhost:3000/api/update?key=<project-key>`.
+Open a merge request in that repository and then visit `/stacks` to confirm
+that the stack for the MR appears.
+
 ---
 
 ## License
