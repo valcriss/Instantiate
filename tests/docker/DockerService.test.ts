@@ -1,5 +1,5 @@
 jest.mock('execa') // <-- utilise __mocks__/execa.ts
-import { execa } from 'execa'
+import { execa, type ResultPromise } from 'execa'
 import { DockerService } from '../../src/docker/DockerService'
 import * as ioUtils from '../../src/utils/ioUtils'
 
@@ -60,8 +60,8 @@ describe('DockerService', () => {
         resolve(undefined)
       })
     })
-    Object.assign(promise, { stdout, stderr })
-    mockedExeca.mockReturnValueOnce(promise as any)
+    const childProcess = Object.assign(promise, { stdout, stderr }) as unknown as ResultPromise
+    mockedExeca.mockReturnValueOnce(childProcess)
     const logger = await import('../../src/utils/logger')
     jest.spyOn(logger.default, 'info').mockImplementation(jest.fn())
 
@@ -83,8 +83,8 @@ describe('DockerService', () => {
         resolve(undefined)
       })
     })
-    Object.assign(promise, { stdout, stderr })
-    mockedExeca.mockReturnValueOnce(promise as any)
+    const childProcess = Object.assign(promise, { stdout, stderr }) as unknown as ResultPromise
+    mockedExeca.mockReturnValueOnce(childProcess)
     const logger = await import('../../src/utils/logger')
     jest.spyOn(logger.default, 'info').mockImplementation(jest.fn())
 

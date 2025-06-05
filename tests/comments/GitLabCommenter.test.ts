@@ -1,4 +1,4 @@
-import fetch from 'node-fetch'
+import fetch, { type Response } from 'node-fetch'
 import logger from '../../src/utils/logger'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { GitLabCommenter } from '../../src/comments/GitLabCommenter'
@@ -119,7 +119,7 @@ describe('GitLabCommenter', () => {
     })
 
     it('returns empty array and warns when json method is missing', async () => {
-      mockFetch.mockResolvedValueOnce({ status: 200 } as any)
+      mockFetch.mockResolvedValueOnce({ status: 200 } as unknown as Response)
       const comments = await (commenter as GitLabCommenter).getComments('https://gitlab.example.com', '123', '456')
       expect(comments).toEqual([])
       expect(logger.warn).toHaveBeenCalledWith('[gitlab-comment] Unexpected response format, unable to parse comments')
