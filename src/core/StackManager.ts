@@ -19,9 +19,9 @@ export class StackManager {
     const mrId = payload.mr_id
     const tmpPath = path.join(os.tmpdir(), 'instantiate', projectId.toString(), mrId.toString())
     const cloneUrl = `${payload.repo}`
-    const hostdomain = process.env.HOST_DOMAIN ?? 'localhost'
+    const hostDomain = process.env.HOST_DOMAIN ?? 'localhost'
     const hostScheme = process.env.HOST_SCHEME ?? 'http'
-    const hostDns = `${hostScheme}://${hostdomain}`
+    const hostDns = `${hostScheme}://${hostDomain}`
     const commenter = CommentService.getCommenter(payload.provider)
     try {
       logger.info(`[stack] Starting the deployment of the stack for MR #${mrId}`)
@@ -85,6 +85,8 @@ export class StackManager {
         MR_ID: mrId,
         PROJECT_KEY: projectKey,
         HOST_DNS: hostDns,
+        HOST_DOMAIN: hostDomain,
+        HOST_SCHEME: hostScheme,
         ...ports // injecte WEB_PORT, API_PORT, etc.
       }
 

@@ -117,6 +117,17 @@ services:
       - "{{FLASK_PORT}}:5000"
 ```
 
+### Template variables
+
+When rendering your `docker-compose.yml` template, Instantiate replaces several placeholders:
+
+- `MR_ID` – the merge request identifier.
+- `PROJECT_KEY` – the project key associated with the repository.
+- `HOST_DNS` – combination of `HOST_SCHEME` and `HOST_DOMAIN` (e.g. `http://localhost`).
+- `HOST_DOMAIN` – the domain used to expose containers.
+- `HOST_SCHEME` – the URL scheme (`http` or `https`).
+- Any variables declared under `expose_ports` in `config.yml` such as `FRONT_PORT`.
+
 ### 2. Set Up Instantiate
 
 To run Instantiate locally or on a server, you need to:
