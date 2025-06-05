@@ -130,21 +130,21 @@ docker compose up -d
 ```
 #### Environment Variables
 
-| Variable                   | Required                                       | Description                                                                                |
-| -------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| NODE_ENV                   | Yes                                            | Should be set to production to enable production mode behavior.                            |
-| LOG_LEVEL                  | Default info                                   | Logging verbosity (info, warn, debug, error). Default is info.                             |
-| HOST_DOMAIN                | Default localhost                              | Public domain name or IP where Instantiate build stacks are accessible (e.g. localhost).   |
-| HOST_SCHEME                | Default http                                   | URL scheme to use (http or https). Used to build stack URLs.                               |
-| PORT_MIN                   | Default 10000                                  | Lower bound for dynamically allocated ports.           |
-| PORT_MAX                   | Default 11000                                  | Upper bound for dynamically allocated ports.           |
-| REPOSITORY_GITLAB_USERNAME | Required for private repositories              | GitLab username with access to the repositories being deployed (for private repositories). |
-| REPOSITORY_GITLAB_TOKEN    | Required for private repositories and comments | GitLab personal access token for commenting on merge requests.                             |
-| REPOSITORY_GITHUB_USERNAME | Required for private repositories              | GitHub username with access to the repositories being deployed (for private repositories). |
-| REPOSITORY_GITHUB_TOKEN    | Required for private repositories and comments | GitHub personal access token for commenting on merge requests                              |
-| DATABASE_URL               | Default postgresql://instantiate:instantiate@localhost:5432/instantiate | PostgreSQL connection string used by Instantiate |
-| MQTT_BROKER_URL            | Default mqtt://localhost:1883                 | Address of the MQTT broker used for asynchronous processing |
-| IGNORE_SSL_ERRORS          | Default false                                  | Set to `true` to disable SSL verification for Git operations and HTTP requests |
+| Variable                   | Required                                         | Description                                                                                |
+| -------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| NODE_ENV                   | Yes                                              | Should be set to production to enable production mode behavior.                            |
+| LOG_LEVEL                  | Default : info                                   | Logging verbosity (info, warn, debug, error). Default is info.                             |
+| HOST_DOMAIN                | Default : localhost                              | Public domain name or IP where Instantiate build stacks are accessible (e.g. localhost).   |
+| HOST_SCHEME                | Default : http                                   | URL scheme to use (http or https). Used to build stack URLs.                               |
+| PORT_MIN                   | Default : 10000                                  | Lower bound for dynamically allocated ports.                                               |
+| PORT_MAX                   | Default : 11000                                  | Upper bound for dynamically allocated ports.                                               |
+| REPOSITORY_GITLAB_USERNAME | Required for private repositories                | GitLab username with access to the repositories being deployed (for private repositories). |
+| REPOSITORY_GITLAB_TOKEN    | Required for private repositories and comments   | GitLab personal access token for commenting on merge requests.                             |
+| REPOSITORY_GITHUB_USERNAME | Required for private repositories                | GitHub username with access to the repositories being deployed (for private repositories). |
+| REPOSITORY_GITHUB_TOKEN    | Required for private repositories and comments   | GitHub personal access token for commenting on merge requests                              |
+| DATABASE_URL               | Default : localhost db                           | PostgreSQL connection string used by Instantiate                                           |
+| MQTT_BROKER_URL            | Default : localhost mqtt                         | Address of the MQTT broker used for asynchronous processing                                |
+| IGNORE_SSL_ERRORS          | Default : false                                  | Set to `true` to disable SSL verification for Git operations and HTTP requests             |
 
 
 ### 3. Configure Webhooks
