@@ -141,18 +141,21 @@ docker compose up -d
 ```
 #### Environment Variables
 
-| Variable                   | Required                                       | Description                                                                                |
-| -------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| NODE_ENV                   | Yes                                            | Should be set to production to enable production mode behavior.                            |
-| LOG_LEVEL                  | Default info                                   | Logging verbosity (info, warn, debug, error). Default is info.                             |
-| HOST_DOMAIN                | Default localhost                              | Public domain name or IP where Instantiate build stacks are accessible (e.g. localhost).   |
-| HOST_SCHEME                | Default http                                   | URL scheme to use (http or https). Used to build stack URLs.                               |
-| PORT_MIN                   | Default 10000                                  | Lower bound for dynamically allocated ports.           |
-| PORT_MAX                   | Default 11000                                  | Upper bound for dynamically allocated ports.           |
-| REPOSITORY_GITLAB_USERNAME | Required for private repositories              | GitLab username with access to the repositories being deployed (for private repositories). |
-| REPOSITORY_GITLAB_TOKEN    | Required for private repositories and comments | GitLab personal access token for commenting on merge requests.                             |
-| REPOSITORY_GITHUB_USERNAME | Required for private repositories              | GitHub username with access to the repositories being deployed (for private repositories). |
-| REPOSITORY_GITHUB_TOKEN    | Required for private repositories and comments | GitHub personal access token for commenting on merge requests                              |
+| Variable                   | Required                                         | Description                                                                                |
+| -------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| NODE_ENV                   | Yes                                              | Should be set to production to enable production mode behavior.                            |
+| LOG_LEVEL                  | Default : info                                   | Logging verbosity (info, warn, debug, error). Default is info.                             |
+| HOST_DOMAIN                | Default : localhost                              | Public domain name or IP where Instantiate build stacks are accessible (e.g. localhost).   |
+| HOST_SCHEME                | Default : http                                   | URL scheme to use (http or https). Used to build stack URLs.                               |
+| PORT_MIN                   | Default : 10000                                  | Lower bound for dynamically allocated ports.                                               |
+| PORT_MAX                   | Default : 11000                                  | Upper bound for dynamically allocated ports.                                               |
+| REPOSITORY_GITLAB_USERNAME | Required for private repositories                | GitLab username with access to the repositories being deployed (for private repositories). |
+| REPOSITORY_GITLAB_TOKEN    | Required for private repositories and comments   | GitLab personal access token for commenting on merge requests.                             |
+| REPOSITORY_GITHUB_USERNAME | Required for private repositories                | GitHub username with access to the repositories being deployed (for private repositories). |
+| REPOSITORY_GITHUB_TOKEN    | Required for private repositories and comments   | GitHub personal access token for commenting on merge requests                              |
+| DATABASE_URL               | Default : localhost db                           | PostgreSQL connection string used by Instantiate                                           |
+| MQTT_BROKER_URL            | Default : localhost mqtt                         | Address of the MQTT broker used for asynchronous processing                                |
+| IGNORE_SSL_ERRORS          | Default : false                                  | Set to `true` to disable SSL verification for Git operations and HTTP requests             |
 
 
 ### 3. Configure Webhooks
@@ -250,6 +253,24 @@ npm run format         # Format with Prettier
 npm run test           # Run tests
 npm run test:coverage  # Run tests with coverage
 ```
+
+## End-to-end testing
+
+You can quickly try Instantiate locally by running both the API and a GitLab
+instance with Docker Compose:
+
+```bash
+# Start the API and its dependencies
+docker compose -f docker-compose.dev.yml up -d
+
+# In another terminal, launch GitLab
+docker compose -f docker-compose.gitlab.yml up -d
+```
+
+After GitLab is ready, create a test project and add a webhook pointing to
+`http://localhost:3000/api/update?key=<project-key>`.
+Open a merge request in that repository and then visit `/stacks` to confirm
+that the stack for the MR appears.
 
 ---
 
