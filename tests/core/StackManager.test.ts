@@ -101,7 +101,10 @@ describe('StackManager.deploy', () => {
         WEB_PORT: 10001,
         API_PORT: 10002,
         PROJECT_KEY: projectKey,
-        MR_ID: 'mr-42'
+        MR_ID: 'mr-42',
+        HOST_DOMAIN: 'localhost',
+        HOST_SCHEME: 'http',
+        HOST_DNS: 'http://localhost'
       })
     )
 

@@ -119,15 +119,14 @@ services:
 
 ### Template variables
 
-The **StackManager** injects several placeholders in your Compose template.
-They are substituted by the **TemplateEngine** right before running
-`docker compose up`.
+When rendering your `docker-compose.yml` template, Instantiate replaces several placeholders:
 
-- `{{MR_ID}}` – the merge request or pull request identifier
-- `{{PROJECT_KEY}}` – the project key used when calling Instantiate
-- `{{HOST_DNS}}` – the scheme and domain where stacks are reachable
-- any port variables defined under `expose_ports` in `.instantiate/config.yml`
-  (for example `{{FRONT_PORT}}`)
+- `MR_ID` – the merge request identifier.
+- `PROJECT_KEY` – the project key associated with the repository.
+- `HOST_DNS` – combination of `HOST_SCHEME` and `HOST_DOMAIN` (e.g. `http://localhost`).
+- `HOST_DOMAIN` – the domain used to expose containers.
+- `HOST_SCHEME` – the URL scheme (`http` or `https`).
+- Any variables declared under `expose_ports` in `config.yml` such as `FRONT_PORT`.
 
 ### 2. Set Up Instantiate
 
