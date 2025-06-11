@@ -4,3 +4,4 @@ dist
 gitlab/
 .scannerwork/
 .env
+.idea/
