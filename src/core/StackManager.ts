@@ -7,7 +7,7 @@ import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import db from '../db'
 import logger from '../utils/logger'
 import { TemplateEngine } from './TemplateEngine'
-import { DockerService } from '../docker/DockerService'
+import { getOrchestratorAdapter } from '../orchestrators'
 import { PortAllocator } from './PortAllocator'
 import { CommentService } from '../comments/CommentService'
 import { StackService } from './StackService'
@@ -67,6 +67,8 @@ export class StackManager {
       // Lecture du fichier de configuration
       const configRaw = await fs.readFile(configPath, 'utf-8')
       const config = YAML.parse(configRaw)
+      const orchestrator = config.orchestrator ?? 'compose'
+      const adapter = getOrchestratorAdapter(orchestrator)
       const composeOutput = path.join(tmpPath, 'docker-compose.yml')
 
       // Préparation des ports dynamiques pour chaque service déclaré
@@ -94,7 +96,7 @@ export class StackManager {
       await TemplateEngine.renderToFile(composeInput, composeOutput, context)
 
       // Lancement des containers
-      await DockerService.up(tmpPath, `${projectId}-mr-${mrId}`)
+      await adapter.up(tmpPath, `${projectId}-mr-${mrId}`)
       await commenter.postStatusComment(payload, 'ready', portsLinks)
       logger.info(`[stack] Stack for the MR #${mrId} on project ${projectId} successfully deployed`)
 
@@ -124,7 +126,16 @@ export class StackManager {
 
     try {
       logger.info(`[stack] Removing of the stack for MR #${mrId}`)
-      await DockerService.down(tmpPath, `${projectId}-mr-${mrId}`)
+      let orchestrator = 'compose'
+      try {
+        const raw = await fs.readFile(path.join(tmpPath, '.instantiate', 'config.yml'), 'utf-8')
+        const conf = YAML.parse(raw)
+        orchestrator = conf.orchestrator ?? 'compose'
+      } catch {
+        // ignore if missing
+      }
+      const adapter = getOrchestratorAdapter(orchestrator)
+      await adapter.down(tmpPath, `${projectId}-mr-${mrId}`)
       await PortAllocator.releasePorts(projectId, mrId)
 
       await db.updateMergeRequest(payload, 'closed')

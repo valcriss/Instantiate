@@ -3,7 +3,7 @@ import simpleGit from 'simple-git'
 import fs from 'fs/promises'
 import YAML from 'yaml'
 import { TemplateEngine } from '../../src/core/TemplateEngine'
-import { DockerService } from '../../src/docker/DockerService'
+import { DockerComposeAdapter } from '../../src/orchestrators/DockerComposeAdapter'
 import db from '../../src/db'
 import { PortAllocator } from '../../src/core/PortAllocator'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
@@ -16,7 +16,7 @@ jest.mock('simple-git')
 jest.mock('fs/promises')
 jest.mock('yaml')
 jest.mock('../../src/core/TemplateEngine')
-jest.mock('../../src/docker/DockerService')
+jest.mock('../../src/orchestrators/DockerComposeAdapter')
 jest.mock('../../src/db')
 jest.mock('../../src/core/PortAllocator')
 
@@ -24,7 +24,7 @@ const mockGit = simpleGit as jest.MockedFunction<typeof simpleGit>
 const mockFs = fs as jest.Mocked<typeof fs>
 const mockYaml = YAML as unknown as { parse: jest.Mock }
 const mockTemplateEngine = TemplateEngine as jest.Mocked<typeof TemplateEngine>
-const mockDocker = DockerService as jest.Mocked<typeof DockerService>
+const mockDocker = DockerComposeAdapter as unknown as jest.MockedClass<typeof DockerComposeAdapter>
 const mockDb = db as jest.Mocked<typeof db>
 const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
 
@@ -78,7 +78,7 @@ describe('StackManager.deploy', () => {
 
     // Mock template + docker
     mockTemplateEngine.renderToFile.mockResolvedValue()
-    mockDocker.up.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
     mockFs.stat.mockImplementation(async (filePath: PathLike) => {
       return {} as Stats // Simulate file exists
     })
@@ -108,7 +108,7 @@ describe('StackManager.deploy', () => {
       })
     )
 
-    expect(mockDocker.up).toHaveBeenCalled()
+    expect(mockDocker.prototype.up).toHaveBeenCalled()
     expect(mockDb.updateMergeRequest).toHaveBeenCalledWith(
       {
         author: 'valcriss',
@@ -138,7 +138,7 @@ describe('StackManager.deploy', () => {
     mockFs.readFile.mockResolvedValueOnce('yaml')
     mockYaml.parse.mockReturnValue({})
     mockTemplateEngine.renderToFile.mockResolvedValue()
-    mockDocker.up.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
 
     await stackManager.deploy(payload, projectKey)
 
@@ -185,7 +185,7 @@ describe('StackManager.deploy', () => {
     ).rejects.toThrow('template fail')
 
     expect(mockTemplateEngine.renderToFile).toHaveBeenCalled()
-    expect(mockDocker.up).not.toHaveBeenCalled()
+    expect(mockDocker.prototype.up).not.toHaveBeenCalled()
   })
 
   it('log un avertissement et retourne si le fichier config.yml est manquant', async () => {
@@ -224,7 +224,7 @@ describe('StackManager.deploy', () => {
     )
 
     expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Unable to find the configuration file'))
-    expect(mockDocker.up).not.toHaveBeenCalled()
+    expect(mockDocker.prototype.up).not.toHaveBeenCalled()
     expect(mockDb.addExposedPorts).not.toHaveBeenCalled()
 
     loggerSpy.mockRestore()
@@ -266,7 +266,7 @@ describe('StackManager.deploy', () => {
     )
 
     expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Unable to find the docker-compose file'))
-    expect(mockDocker.up).not.toHaveBeenCalled()
+    expect(mockDocker.prototype.up).not.toHaveBeenCalled()
     expect(mockDb.addExposedPorts).not.toHaveBeenCalled()
 
     loggerSpy.mockRestore()
