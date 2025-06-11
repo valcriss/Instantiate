@@ -35,13 +35,15 @@ jobs:
           name: coverage-report
           path: coverage/lcov-report
 
-      - name: 🚀 Déploiement du rapport de couverture sur GitHub Pages
+      - name: 🚀 Déploiement de la documentation
         if: github.ref == 'refs/heads/main'
-        run: npm run coverage:publish
+        run: cd documentation && npm ci && npm run build && npm run deploy
         env:
             GIT_AUTHOR_NAME: github-actions
             GIT_AUTHOR_EMAIL: github-actions@github.com
             GIT_COMMITTER_NAME: github-actions
             GIT_COMMITTER_EMAIL: github-actions@github.com
+            GIT_USER: valcriss
+            GIT_PASS: ${{ secrets.GITHUB_TOKEN }}
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   

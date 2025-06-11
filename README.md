@@ -37,7 +37,7 @@ During code review, teams often struggle to reproduce the exact application stac
 7. The environment is accessible via `<base-url>:<dynamic-port>` links.
 8. When the MR is closed, the stack is automatically destroyed.
 
-![Workflow](./docs/workflow.svg)
+![Workflow](documentation/workflow.svg)
 
 ---
 
@@ -258,7 +258,7 @@ Each stack entry includes:
 
 This page offers a quick and human-friendly overview of all deployed environments, without requiring a separate frontend or dashboard service.
 
-![Dashboard](./docs/dashboard.png)
+![Dashboard](documentation/dashboard.png)
 
 ### 5. Deployment
 

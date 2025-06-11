@@ -5,7 +5,7 @@ const configPrettier = require('eslint-config-prettier')
 
 module.exports = [
   {
-    ignores: ['dist', 'coverage', 'node_modules'],
+    ignores: ['dist', 'coverage', 'node_modules', 'documentation'],
     languageOptions: {
       parser: parserTs,
       ecmaVersion: 'latest',
