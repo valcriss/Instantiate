@@ -21,6 +21,7 @@ During code review, teams often struggle to reproduce the exact application stac
 - 🛠️ Live build and runtime logs
 - ⚡ Healthcheck and status tracking for deployed services
 - ❌ Automatic teardown when MRs are closed
+- 🐳 Choose your orchestrator: Compose, Swarm or Kubernetes
 - 🚀 Async processing via MQTT queue
 
 ---
@@ -44,7 +45,7 @@ During code review, teams often struggle to reproduce the exact application stac
 
 - `src/api` – HTTP endpoints (e.g. `/api/update`)
 - `src/core` – Core logic: StackManager, PortAllocator, TemplateEngine
-- `src/docker` – DockerService wrapper (compose up/down)
+- `src/orchestrators` – adapters for Compose, Swarm and Kubernetes
 - `src/mqtt` – MQTT publisher and worker (async queueing)
 - `tests/` – Unit tests for all core services
 
@@ -61,6 +62,7 @@ talking to a backend service:
 
 ```yaml
 # .instantiate/config.yml
+orchestrator: compose # compose | swarm | kubernetes
 expose_ports:
   - service: front
     port: 3000 # internal port
@@ -101,6 +103,7 @@ Here is another minimal example for a Python Flask application:
 
 ```yaml
 # .instantiate/config.yml
+orchestrator: compose
 expose_ports:
   - service: app
     port: 5000

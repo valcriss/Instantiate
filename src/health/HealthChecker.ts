@@ -1,17 +1,32 @@
-import execa from '../docker/execaWrapper'
+import path from 'path'
+import fs from 'fs/promises'
+import YAML from 'yaml'
 import { StackInfo, StackService, StackStatus } from '../core/StackService'
 import logger from '../utils/logger'
+import { getOrchestratorAdapter } from '../orchestrators'
 
 export class HealthChecker {
   static async checkStack(stack: StackInfo): Promise<StackStatus> {
     const projectName = `${stack.projectId}-mr-${stack.mr_id}`
     try {
-      const { stdout } = await execa('docker', ['ps', '--filter', `label=com.docker.compose.project=${projectName}`, '--format', '{{.State}}'])
-      if (!stdout) {
-        return 'error'
+      let orchestrator = 'compose'
+      try {
+        const raw = await fs.readFile(
+          path.join(
+            path.join(require('os').tmpdir(), 'instantiate', stack.projectId, stack.mr_id),
+            '.instantiate',
+            'config.yml'
+          ),
+          'utf-8'
+        )
+        const config = YAML.parse(raw)
+        orchestrator = config.orchestrator ?? 'compose'
+      } catch {
+        // ignore
       }
-      const states = stdout.split('\n').filter(Boolean)
-      return states.every((s) => s === 'running') ? 'running' : 'error'
+      const adapter = getOrchestratorAdapter(orchestrator)
+      const status = await adapter.checkHealth(projectName)
+      return status
     } catch (err) {
       logger.error('[health] Error checking stack', err)
       return 'error'

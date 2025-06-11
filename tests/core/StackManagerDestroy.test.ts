@@ -1,5 +1,5 @@
 import { StackManager } from '../../src/core/StackManager'
-import { DockerService } from '../../src/docker/DockerService'
+import { DockerComposeAdapter } from '../../src/orchestrators/DockerComposeAdapter'
 import db from '../../src/db'
 import { PortAllocator } from '../../src/core/PortAllocator'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
@@ -7,11 +7,11 @@ import { closeLogger } from '../../src/utils/logger'
 import { closeConnection } from '../../src/mqtt/MQTTClient'
 import { StackService } from '../../src/core/StackService'
 
-jest.mock('../../src/docker/DockerService')
+jest.mock('../../src/orchestrators/DockerComposeAdapter')
 jest.mock('../../src/db')
 jest.mock('../../src/core/PortAllocator')
 
-const mockDocker = DockerService as jest.Mocked<typeof DockerService>
+const mockDocker = DockerComposeAdapter as unknown as jest.MockedClass<typeof DockerComposeAdapter>
 const mockDb = db as jest.Mocked<typeof db>
 const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
 const mockStackService = StackService as jest.Mocked<typeof StackService>
@@ -47,14 +47,14 @@ describe('StackManager.destroy', () => {
 
   it('supprime la stack et libère les ports', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    mockDocker.down.mockResolvedValue()
+    mockDocker.prototype.down.mockResolvedValue()
     mockPorts.releasePorts.mockResolvedValue()
     mockDb.releasePorts.mockResolvedValue()
     mockDb.saveStack.mockResolvedValue()
     await stackManager.destroy(payload as MergeRequestPayload, projectKey)
 
     // ✅ Vérifie l’arrêt de Docker
-    expect(mockDocker.down).toHaveBeenCalledWith(expect.stringContaining('instantiate'), `${payload.project_id}-mr-${payload.mr_id}`)
+    expect(mockDocker.prototype.down).toHaveBeenCalledWith(expect.stringContaining('instantiate'), `${payload.project_id}-mr-${payload.mr_id}`)
 
     // ✅ Vérifie la libération des ports
     expect(mockPorts.releasePorts).toHaveBeenCalledWith('valcriss', payload.mr_id)
@@ -83,7 +83,7 @@ describe('StackManager.destroy', () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
     const stackManager = new StackManager()
 
-    mockDocker.down.mockRejectedValueOnce(new Error('docker down fail'))
+    mockDocker.prototype.down.mockRejectedValueOnce(new Error('docker down fail'))
 
     const payload: MergeRequestPayload = {
       project_id: 'valcriss',
@@ -102,7 +102,7 @@ describe('StackManager.destroy', () => {
 
     await expect(stackManager.destroy(payload as MergeRequestPayload, 'key')).rejects.toThrow('docker down fail')
 
-    expect(mockDocker.down).toHaveBeenCalled()
+    expect(mockDocker.prototype.down).toHaveBeenCalled()
     expect(mockPorts.releasePorts).not.toHaveBeenCalled()
     expect(mockDb.updateMergeRequest).not.toHaveBeenCalled()
   })

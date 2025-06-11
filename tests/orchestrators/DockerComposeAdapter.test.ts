@@ -1,6 +1,6 @@
 jest.mock('execa') // <-- utilise __mocks__/execa.ts
 import { execa, type ResultPromise } from 'execa'
-import { DockerService } from '../../src/docker/DockerService'
+import { DockerComposeAdapter } from '../../src/orchestrators/DockerComposeAdapter'
 import * as ioUtils from '../../src/utils/ioUtils'
 
 jest.mock('../../src/utils/ioUtils', () => ({
@@ -11,7 +11,7 @@ jest.mock('../../src/utils/ioUtils', () => ({
 const mockedExeca = execa as jest.MockedFunction<typeof execa>
 const mockedDirectoryExists = ioUtils.directoryExists as jest.MockedFunction<typeof ioUtils.directoryExists>
 
-describe('DockerService', () => {
+describe('DockerComposeAdapter', () => {
   const path = '/fake/path'
   const projectName = 'mr-123'
 
@@ -23,7 +23,8 @@ describe('DockerService', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockedExeca.mockResolvedValueOnce({} as any)
 
-    await DockerService.up(path, projectName)
+    const adapter = new DockerComposeAdapter()
+    await adapter.up(path, projectName)
 
     expect(mockedExeca).toHaveBeenCalledWith(
       'docker-compose',
@@ -38,14 +39,16 @@ describe('DockerService', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockedExeca.mockResolvedValueOnce({} as any)
 
-    await DockerService.down(path, projectName)
+    const adapter = new DockerComposeAdapter()
+    await adapter.down(path, projectName)
 
     expect(mockedExeca).toHaveBeenCalledWith('docker-compose', ['-p', projectName, 'down', '--volumes'], expect.objectContaining({ cwd: path }))
   })
 
   it("n'exécute pas docker-compose down si le dossier n'existe pas", async () => {
     mockedDirectoryExists.mockResolvedValueOnce(false)
-    await DockerService.down(path, projectName)
+    const adapter = new DockerComposeAdapter()
+    await adapter.down(path, projectName)
     expect(mockedExeca).not.toHaveBeenCalled()
   })
 
@@ -65,7 +68,8 @@ describe('DockerService', () => {
     const logger = await import('../../src/utils/logger')
     jest.spyOn(logger.default, 'info').mockImplementation(jest.fn())
 
-    await DockerService.up(path, projectName)
+    const adapter = new DockerComposeAdapter()
+    await adapter.up(path, projectName)
 
     expect(logger.default.info).toHaveBeenCalledWith('[docker:stdout] out')
     expect(logger.default.info).toHaveBeenCalledWith('[docker:stderr] err')
@@ -88,7 +92,8 @@ describe('DockerService', () => {
     const logger = await import('../../src/utils/logger')
     jest.spyOn(logger.default, 'info').mockImplementation(jest.fn())
 
-    await DockerService.down(path, projectName)
+    const adapter = new DockerComposeAdapter()
+    await adapter.down(path, projectName)
 
     expect(logger.default.info).toHaveBeenCalledWith('[docker:stdout] out')
     expect(logger.default.info).toHaveBeenCalledWith('[docker:stderr] err')
