@@ -1,6 +1,6 @@
 ---
-sidebar_position: 1
-next: installation
+sidebar_position: 2
+next: configuration-docker
 ---
 
 # Installation
