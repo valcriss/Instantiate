@@ -98,4 +98,38 @@ describe('DockerComposeAdapter', () => {
     expect(logger.default.info).toHaveBeenCalledWith('[docker:stdout] out')
     expect(logger.default.info).toHaveBeenCalledWith('[docker:stderr] err')
   })
+
+  it('checkHealth retourne running quand tous les conteneurs tournent', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockedExeca.mockResolvedValueOnce({ stdout: 'running\nrunning' } as any)
+    const adapter = new DockerComposeAdapter()
+    const status = await adapter.checkHealth(projectName)
+    expect(status).toBe('running')
+  })
+
+  it('checkHealth retourne error quand un conteneur est arrêté', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockedExeca.mockResolvedValueOnce({ stdout: 'running\nexited' } as any)
+    const adapter = new DockerComposeAdapter()
+    const status = await adapter.checkHealth(projectName)
+    expect(status).toBe('error')
+  })
+
+  it("checkHealth retourne error quand aucune sortie n'est disponible", async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockedExeca.mockResolvedValueOnce({ stdout: '' } as any)
+    const adapter = new DockerComposeAdapter()
+    const status = await adapter.checkHealth(projectName)
+    expect(status).toBe('error')
+  })
+
+  it('checkHealth logge et retourne error si execa échoue', async () => {
+    const logger = await import('../../src/utils/logger')
+    jest.spyOn(logger.default, 'error').mockImplementation(jest.fn())
+    mockedExeca.mockRejectedValueOnce(new Error('boom'))
+    const adapter = new DockerComposeAdapter()
+    const status = await adapter.checkHealth(projectName)
+    expect(status).toBe('error')
+    expect(logger.default.error).toHaveBeenCalled()
+  })
 })

@@ -1,11 +1,19 @@
-jest.mock('../../src/docker/execaWrapper')
-import execa from '../../src/docker/execaWrapper'
+jest.mock('fs/promises')
+jest.mock('yaml')
+jest.mock('../../src/orchestrators', () => ({
+  getOrchestratorAdapter: jest.fn()
+}))
+import fs from 'fs/promises'
+import YAML from 'yaml'
+import { getOrchestratorAdapter } from '../../src/orchestrators'
 import { HealthChecker } from '../../src/health/HealthChecker'
 import { StackService, StackInfo } from '../../src/core/StackService'
 
 jest.mock('../../src/core/StackService')
 
-const mockedExeca = execa as unknown as jest.Mock
+const mockFs = fs as jest.Mocked<typeof fs>
+const mockYaml = YAML as unknown as { parse: jest.Mock }
+const mockGetAdapter = getOrchestratorAdapter as jest.Mock
 const mockedStackService = StackService as jest.Mocked<typeof StackService>
 
 describe('HealthChecker', () => {
@@ -25,29 +33,41 @@ describe('HealthChecker', () => {
       links: {}
     }
 
-    it('returns running when all containers are running', async () => {
-      mockedExeca.mockResolvedValueOnce({ stdout: 'running\nrunning' })
+    it('uses compose when config missing', async () => {
+      mockFs.readFile.mockRejectedValueOnce(new Error('no file'))
+      const adapter = { checkHealth: jest.fn().mockResolvedValue('running') }
+      mockGetAdapter.mockReturnValueOnce(adapter)
       const status = await HealthChecker.checkStack(stack)
+      expect(mockGetAdapter).toHaveBeenCalledWith('compose')
       expect(status).toBe('running')
-      expect(mockedExeca).toHaveBeenCalled()
     })
 
-    it('returns error when no output', async () => {
-      mockedExeca.mockResolvedValueOnce({ stdout: '' })
+    it('uses orchestrator from config', async () => {
+      mockFs.readFile.mockResolvedValueOnce('yaml')
+      mockYaml.parse.mockReturnValueOnce({ orchestrator: 'swarm' })
+      const adapter = { checkHealth: jest.fn().mockResolvedValue('error') }
+      mockGetAdapter.mockReturnValueOnce(adapter)
       const status = await HealthChecker.checkStack(stack)
+      expect(mockGetAdapter).toHaveBeenCalledWith('swarm')
       expect(status).toBe('error')
     })
 
-    it('returns error when any container not running', async () => {
-      mockedExeca.mockResolvedValueOnce({ stdout: 'running\nexited' })
+    it('uses default when orchestrator key missing', async () => {
+      mockFs.readFile.mockResolvedValueOnce('yaml')
+      mockYaml.parse.mockReturnValueOnce({})
+      const adapter = { checkHealth: jest.fn().mockResolvedValue('running') }
+      mockGetAdapter.mockReturnValueOnce(adapter)
       const status = await HealthChecker.checkStack(stack)
-      expect(status).toBe('error')
+      expect(mockGetAdapter).toHaveBeenCalledWith('compose')
+      expect(status).toBe('running')
     })
 
-    it('returns error and logs when execa throws', async () => {
+    it('logs and returns error when adapter throws', async () => {
+      mockFs.readFile.mockRejectedValueOnce(new Error('no file'))
+      const adapter = { checkHealth: jest.fn().mockRejectedValue(new Error('boom')) }
+      mockGetAdapter.mockReturnValueOnce(adapter)
       const logger = await import('../../src/utils/logger')
       jest.spyOn(logger.default, 'error').mockImplementation(jest.fn())
-      mockedExeca.mockRejectedValueOnce(new Error('boom'))
       const status = await HealthChecker.checkStack(stack)
       expect(status).toBe('error')
       expect(logger.default.error).toHaveBeenCalled()
@@ -60,7 +80,7 @@ describe('HealthChecker', () => {
         { projectId: '1', mr_id: '2', projectName: '', mergeRequestName: '', ports: {}, provider: 'github', status: 'running', links: {} }
       ]
       mockedStackService.getAll.mockResolvedValueOnce(stacks)
-      mockedExeca.mockResolvedValueOnce({ stdout: '' })
+      jest.spyOn(HealthChecker, 'checkStack').mockResolvedValueOnce('error')
       await HealthChecker.checkAllStacks()
       expect(mockedStackService.updateStatus).toHaveBeenCalledWith('1', '2', 'error')
     })
@@ -70,7 +90,7 @@ describe('HealthChecker', () => {
         { projectId: '1', mr_id: '2', projectName: '', mergeRequestName: '', ports: {}, provider: 'github', status: 'running', links: {} }
       ]
       mockedStackService.getAll.mockResolvedValueOnce(stacks)
-      mockedExeca.mockResolvedValueOnce({ stdout: 'running' })
+      jest.spyOn(HealthChecker, 'checkStack').mockResolvedValueOnce('running')
       await HealthChecker.checkAllStacks()
       expect(mockedStackService.updateStatus).not.toHaveBeenCalled()
     })

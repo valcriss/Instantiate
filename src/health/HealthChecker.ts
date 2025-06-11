@@ -12,11 +12,7 @@ export class HealthChecker {
       let orchestrator = 'compose'
       try {
         const raw = await fs.readFile(
-          path.join(
-            path.join(require('os').tmpdir(), 'instantiate', stack.projectId, stack.mr_id),
-            '.instantiate',
-            'config.yml'
-          ),
+          path.join(path.join(require('os').tmpdir(), 'instantiate', stack.projectId, stack.mr_id), '.instantiate', 'config.yml'),
           'utf-8'
         )
         const config = YAML.parse(raw)

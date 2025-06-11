@@ -6,11 +6,7 @@ import { OrchestratorAdapter } from './OrchestratorAdapter'
 export class DockerComposeAdapter implements OrchestratorAdapter {
   async up(stackPath: string, projectName: string): Promise<void> {
     logger.info(`[docker] Stack up: ${projectName}`)
-    const subprocess = execa(
-      'docker-compose',
-      ['-p', projectName, 'up', '-d', '--force-recreate', '--build'],
-      { cwd: stackPath }
-    )
+    const subprocess = execa('docker-compose', ['-p', projectName, 'up', '-d', '--force-recreate', '--build'], { cwd: stackPath })
     subprocess.stdout?.on('data', (d) => {
       logger.info(`[docker:stdout] ${d.toString().trim()}`)
     })
@@ -26,11 +22,7 @@ export class DockerComposeAdapter implements OrchestratorAdapter {
       return
     }
     logger.info(`[docker] Stack down: ${projectName}`)
-    const subprocess = execa(
-      'docker-compose',
-      ['-p', projectName, 'down', '--volumes'],
-      { cwd: stackPath }
-    )
+    const subprocess = execa('docker-compose', ['-p', projectName, 'down', '--volumes'], { cwd: stackPath })
     subprocess.stdout?.on('data', (d) => {
       logger.info(`[docker:stdout] ${d.toString().trim()}`)
     })
@@ -42,13 +34,7 @@ export class DockerComposeAdapter implements OrchestratorAdapter {
 
   async checkHealth(projectName: string): Promise<'running' | 'error'> {
     try {
-      const { stdout } = await execa('docker', [
-        'ps',
-        '--filter',
-        `label=com.docker.compose.project=${projectName}`,
-        '--format',
-        '{{.State}}'
-      ])
+      const { stdout } = await execa('docker', ['ps', '--filter', `label=com.docker.compose.project=${projectName}`, '--format', '{{.State}}'])
       if (!stdout) {
         return 'error'
       }

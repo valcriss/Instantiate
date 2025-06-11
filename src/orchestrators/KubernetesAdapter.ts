@@ -15,14 +15,7 @@ export class KubernetesAdapter implements OrchestratorAdapter {
 
   async checkHealth(projectName: string): Promise<'running' | 'error'> {
     try {
-      const { stdout } = await execa('kubectl', [
-        'get',
-        'pods',
-        '-l',
-        `app=${projectName}`,
-        '-o',
-        'jsonpath={.items[*].status.phase}'
-      ])
+      const { stdout } = await execa('kubectl', ['get', 'pods', '-l', `app=${projectName}`, '-o', 'jsonpath={.items[*].status.phase}'])
       if (!stdout) {
         return 'error'
       }
