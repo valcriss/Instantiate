@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for docker/DockerService.ts</title>
+    <title>Code coverage report for orchestrators/DockerComposeAdapter.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../prettify.css" />
     <link rel="stylesheet" href="../base.css" />
@@ -19,20 +19,20 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">docker</a> DockerService.ts</h1>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">orchestrators</a> DockerComposeAdapter.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>22/22</span>
+                <span class='fraction'>30/30</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/1</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>22/22</span>
+                <span class='fraction'>29/29</span>
             </div>
         
             
@@ -110,25 +110,21 @@
 <a name='L45'></a><a href='#L45'>45</a>
 <a name='L46'></a><a href='#L46'>46</a>
 <a name='L47'></a><a href='#L47'>47</a>
-<a name='L48'></a><a href='#L48'>48</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">5x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -138,70 +134,77 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { directoryExists } from '../utils/ioUtils'
 import logger from '../utils/logger'
+import execa from '../docker/execaWrapper'
+import { OrchestratorAdapter } from './OrchestratorAdapter'
 &nbsp;
-export class DockerService {
-  static async up(stackPath: string, projectName: string): Promise&lt;void&gt; {
-    const { execa } = await import('execa')
+export class DockerComposeAdapter implements OrchestratorAdapter {
+  async up(stackPath: string, projectName: string): Promise&lt;void&gt; {
     logger.info(`[docker] Stack up: ${projectName}`)
-&nbsp;
-    const subprocess = execa('docker-compose', ['-p', projectName, 'up', '-d', '--force-recreate', '--build'], {
-      cwd: stackPath
+    const subprocess = execa('docker-compose', ['-p', projectName, 'up', '-d', '--force-recreate', '--build'], { cwd: stackPath })
+    subprocess.stdout?.on('data', (d) =&gt; {
+      logger.info(`[docker:stdout] ${d.toString().trim()}`)
     })
-&nbsp;
-    subprocess.stdout?.on('data', (data) =&gt; {
-      logger.info(`[docker:stdout] ${data.toString().trim()}`)
+    subprocess.stderr?.on('data', (d) =&gt; {
+      logger.info(`[docker:stderr] ${d.toString().trim()}`)
     })
-&nbsp;
-    subprocess.stderr?.on('data', (data) =&gt; {
-      logger.info(`[docker:stderr] ${data.toString().trim()}`)
-    })
-&nbsp;
     await subprocess
   }
 &nbsp;
-  static async down(stackPath: string, projectName: string): Promise&lt;void&gt; {
+  async down(stackPath: string, projectName: string): Promise&lt;void&gt; {
     if (!(await directoryExists(stackPath))) {
       logger.warn(`[docker] Stack path does not exist: ${stackPath}`)
       return
     }
-&nbsp;
-    const { execa } = await import('execa')
     logger.info(`[docker] Stack down: ${projectName}`)
-&nbsp;
-    const subprocess = execa('docker-compose', ['-p', projectName, 'down', '--volumes'], {
-      cwd: stackPath
+    const subprocess = execa('docker-compose', ['-p', projectName, 'down', '--volumes'], { cwd: stackPath })
+    subprocess.stdout?.on('data', (d) =&gt; {
+      logger.info(`[docker:stdout] ${d.toString().trim()}`)
     })
-&nbsp;
-    subprocess.stdout?.on('data', (data) =&gt; {
-      logger.info(`[docker:stdout] ${data.toString().trim()}`)
+    subprocess.stderr?.on('data', (d) =&gt; {
+      logger.info(`[docker:stderr] ${d.toString().trim()}`)
     })
-&nbsp;
-    subprocess.stderr?.on('data', (data) =&gt; {
-      logger.info(`[docker:stderr] ${data.toString().trim()}`)
-    })
-&nbsp;
     await subprocess
+  }
+&nbsp;
+  async checkHealth(projectName: string): Promise&lt;'running' | 'error'&gt; {
+    try {
+      const { stdout } = await execa('docker', ['ps', '--filter', `label=com.docker.compose.project=${projectName}`, '--format', '{{.State}}'])
+      if (!stdout) {
+        return 'error'
+      }
+      const states = stdout.split('\n').filter(Boolean)
+      return states.every((s) =&gt; s === 'running') ? 'running' : 'error'
+    } catch (err) {
+      logger.error('[docker] Error checking stack', err)
+      return 'error'
+    }
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -211,7 +214,7 @@ export class DockerService {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-06-05T12:23:30.049Z
+                at 2025-06-11T20:38:56.406Z
             </div>
         <script src="../prettify.js"></script>
         <script>

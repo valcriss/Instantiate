@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">97.77% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>82/82</span>
+                <span class='fraction'>88/90</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">85.71% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>10/10</span>
+                <span class='fraction'>12/14</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">97.77% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>82/82</span>
+                <span class='fraction'>88/90</span>
             </div>
         
             
@@ -206,7 +206,18 @@
 <a name='L141'></a><a href='#L141'>141</a>
 <a name='L142'></a><a href='#L142'>142</a>
 <a name='L143'></a><a href='#L143'>143</a>
-<a name='L144'></a><a href='#L144'>144</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">3x</span>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
@@ -276,6 +287,8 @@
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">7x</span>
@@ -331,6 +344,15 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -358,7 +380,7 @@ import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import db from '../db'
 import logger from '../utils/logger'
 import { TemplateEngine } from './TemplateEngine'
-import { DockerService } from '../docker/DockerService'
+import { getOrchestratorAdapter } from '../orchestrators'
 import { PortAllocator } from './PortAllocator'
 import { CommentService } from '../comments/CommentService'
 import { StackService } from './StackService'
@@ -418,6 +440,8 @@ export class StackManager {
       // Lecture du fichier de configuration
       const configRaw = await fs.readFile(configPath, 'utf-8')
       const config = YAML.parse(configRaw)
+      const orchestrator = config.orchestrator ?? 'compose'
+      const adapter = getOrchestratorAdapter(orchestrator)
       const composeOutput = path.join(tmpPath, 'docker-compose.yml')
 &nbsp;
       // Préparation des ports dynamiques pour chaque service déclaré
@@ -445,7 +469,7 @@ export class StackManager {
       await TemplateEngine.renderToFile(composeInput, composeOutput, context)
 &nbsp;
       // Lancement des containers
-      await DockerService.up(tmpPath, `${projectId}-mr-${mrId}`)
+      await adapter.up(tmpPath, `${projectId}-mr-${mrId}`)
       await commenter.postStatusComment(payload, 'ready', portsLinks)
       logger.info(`[stack] Stack for the MR #${mrId} on project ${projectId} successfully deployed`)
 &nbsp;
@@ -475,7 +499,16 @@ export class StackManager {
 &nbsp;
     try {
       logger.info(`[stack] Removing of the stack for MR #${mrId}`)
-      await DockerService.down(tmpPath, `${projectId}-mr-${mrId}`)
+      let orchestrator = 'compose'
+      try {
+        const raw = await fs.readFile(path.join(tmpPath, '.instantiate', 'config.yml'), 'utf-8')
+        const conf = <span class="cstat-no" title="statement not covered" >YAML.parse(raw)</span>
+<span class="cstat-no" title="statement not covered" >        orchestrator = conf.orchestrator ?? 'compose'</span>
+      } catch {
+        // ignore if missing
+      }
+      const adapter = getOrchestratorAdapter(orchestrator)
+      await adapter.down(tmpPath, `${projectId}-mr-${mrId}`)
       await PortAllocator.releasePorts(projectId, mrId)
 &nbsp;
       await db.updateMergeRequest(payload, 'closed')
@@ -499,7 +532,7 @@ export class StackManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-06-05T12:23:30.049Z
+                at 2025-06-11T20:38:56.406Z
             </div>
         <script src="../prettify.js"></script>
         <script>
