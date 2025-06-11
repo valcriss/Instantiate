@@ -1,12 +1,12 @@
 # Instantiate
 
-[![Coverage](https://img.shields.io/badge/Coverage-Report-blue)](https://valcriss.github.io/Instantiate/) ![CI](https://github.com/valcriss/Instantiate/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/valcriss/Instantiate/actions/workflows/ci.yml/badge.svg)
 
 Instantiate automatically provisions disposable environments for every merge request. It listens to your GitHub or GitLab repository events, deploys your stack using Docker or Kubernetes and cleans everything once the review is done.
 
 ## Documentation
 
-Detailed guides for installation and configuration are available in the [documentation](documentation/README.md) site. Start with the **Introduction** and **Getting Started** sections.
+Detailed guides for installation and configuration are available in the [documentation](https://valcriss.github.io/Instantiate/) site. Start with the **Introduction** and **Getting Started** sections.
 
 ## Development
 

@@ -1,5 +1,6 @@
 ---
 sidebar_position: 4
+next: how-to-contribute
 ---
 
 # Configuration Kubernetes
