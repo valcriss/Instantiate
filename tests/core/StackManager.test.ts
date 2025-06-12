@@ -135,7 +135,7 @@ describe('StackManager.deploy', () => {
 
   it('clones repositories from config and injects their paths', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn() }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -159,6 +159,54 @@ describe('StackManager.deploy', () => {
       expect.any(String),
       expect.objectContaining({ BACKEND_PATH: expect.stringContaining('/backend') })
     )
+  })
+
+  it('uses match behavior when branch exists', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn().mockResolvedValue('something') }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockYaml.parse.mockReturnValue({
+      repositories: {
+        backend: { repo: 'git@github.com:org/backend.git', branch: 'develop', behavior: 'match' }
+      }
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(payload, projectKey)
+
+    expect(fakeGit.listRemote).toHaveBeenCalled()
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', payload.branch])
+  })
+
+  it('falls back to defined branch when match branch is missing', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn().mockResolvedValue('') }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockYaml.parse.mockReturnValue({
+      repositories: {
+        backend: { repo: 'git@github.com:org/backend.git', branch: 'develop', behavior: 'match' }
+      }
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(payload, projectKey)
+
+    expect(fakeGit.listRemote).toHaveBeenCalled()
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'])
   })
 
   it("utilise simpleGit avec l'option sslVerify=false quand IGNORE_SSL_ERRORS est a true", async () => {
