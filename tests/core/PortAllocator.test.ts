@@ -33,17 +33,17 @@ describe('PortAllocator', () => {
     mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
     mockDb.getUsedPorts.mockResolvedValueOnce(new Set([10000, 10001]))
 
-    const port = await PortAllocator.allocatePort('valcriss', 'mr-1', 'web', 'WEB_PORT', 3000)
+    const port = await PortAllocator.allocatePort('valcriss', 'mr-1', 'web', 'WEB_PORT')
 
     expect(port).toEqual(10002)
-    expect(mockDb.addExposedPorts).toHaveBeenCalledWith('valcriss', 'mr-1', 'web', 'WEB_PORT', 3000, 10002)
+    expect(mockDb.addExposedPorts).toHaveBeenCalledWith('valcriss', 'mr-1', 'web', 'WEB_PORT', 0, 10002)
   })
 
   it('ignore les ports déjà utilisés', async () => {
     mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
     mockDb.getUsedPorts.mockResolvedValueOnce(new Set([10000, 10001]))
 
-    const port = await PortAllocator.allocatePort('valcriss', 'mr-2', 'api', 'API_PORT', 8000)
+    const port = await PortAllocator.allocatePort('valcriss', 'mr-2', 'api', 'API_PORT')
     expect(port).toBe(10002)
   })
 
@@ -58,7 +58,7 @@ describe('PortAllocator', () => {
     for (let p = min; p <= max; p++) used.push(p)
     mockDb.getUsedPorts.mockResolvedValueOnce(new Set(used))
 
-    await expect(PortAllocator.allocatePort('valcriss', 'mr-3', 'db', 'BD_PORT', 5432)).rejects.toThrow('There is no available port')
+    await expect(PortAllocator.allocatePort('valcriss', 'mr-3', 'db', 'BD_PORT')).rejects.toThrow('There is no available port')
   })
 
   it('supprime tous les ports d’une MR via releasePorts', async () => {
@@ -75,7 +75,7 @@ describe('PortAllocator', () => {
 
   it('retourne le port déjà alloué si allreadyAllocatedPort retourne une valeur', async () => {
     mockDb.allreadyAllocatedPort.mockResolvedValueOnce(10005)
-    const port = await PortAllocator.allocatePort('valcriss', 'mr-4', 'cache', 'CACHE_PORT', 6379)
+    const port = await PortAllocator.allocatePort('valcriss', 'mr-4', 'cache', 'CACHE_PORT')
 
     expect(port).toBe(10005)
     expect(mockDb.allreadyAllocatedPort).toHaveBeenCalledWith('valcriss', 'mr-4', 'cache', 'CACHE_PORT')
@@ -87,9 +87,9 @@ describe('PortAllocator', () => {
     mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
     mockDb.getUsedPorts.mockResolvedValueOnce(new Set([20000, 20001]))
 
-    const port = await PortAllocator.allocatePort('valcriss', 'mr-env', 'svc', 'SVC_PORT', 1234)
+    const port = await PortAllocator.allocatePort('valcriss', 'mr-env', 'svc', 'SVC_PORT')
 
     expect(port).toBe(20002)
-    expect(mockDb.addExposedPorts).toHaveBeenCalledWith('valcriss', 'mr-env', 'svc', 'SVC_PORT', 1234, 20002)
+    expect(mockDb.addExposedPorts).toHaveBeenCalledWith('valcriss', 'mr-env', 'svc', 'SVC_PORT', 0, 20002)
   })
 })

@@ -14,7 +14,7 @@ stackfile: all.yml
 
 services:
   web:
-    port: 80
+    ports: 1
 ```
 
 ```yaml

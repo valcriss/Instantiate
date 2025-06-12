@@ -15,14 +15,13 @@ stackfile: docker-compose.yml
 
 services:
   app:
-    port: 3000
+    ports: 1
   backend:
     repository:
       repo: git@github.com:org/backend.git
       branch: develop
       behavior: match
-    ports:
-      - 8080
+    ports: 1
 ```
 
 The `behavior` property controls how Instantiate selects the branch to clone:
