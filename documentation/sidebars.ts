@@ -30,7 +30,9 @@ const sidebars: SidebarsConfig = {
       items: [
         'configuration/configuration-docker',
         'configuration/configuration-swarm',
-        'configuration/configuration-kubernetes'
+        'configuration/configuration-kubernetes',
+        'configuration/environment-variables',
+        'configuration/template-variables'
       ],
     },
   ],
