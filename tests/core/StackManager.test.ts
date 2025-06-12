@@ -265,7 +265,7 @@ describe('StackManager.deploy', () => {
       'missing-compose-project'
     )
 
-    expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Unable to find the docker-compose file'))
+    expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('Unable to find the stack template file'))
     expect(mockDocker.prototype.up).not.toHaveBeenCalled()
     expect(mockDb.addExposedPorts).not.toHaveBeenCalled()
 

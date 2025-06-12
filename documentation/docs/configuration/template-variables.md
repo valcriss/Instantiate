@@ -4,7 +4,7 @@ sidebar_position: 7
 
 # Template Variables
 
-Instantiate renders the file `.instantiate/docker-compose.yml` using Mustache. The following variables are available when the template is processed:
+Instantiate renders the stack template defined in `.instantiate/config.yml` using Mustache. By default the file is `docker-compose.yml` (or `all.yml` for Kubernetes). The following variables are available when the template is processed:
 
 - `PROJECT_KEY` - unique identifier for the repository defined in the webhook URL.
 - `MR_ID` - identifier of the merge request being deployed.

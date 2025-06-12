@@ -5,11 +5,12 @@ next: how-to-contribute
 
 # Configuration Kubernetes
 
-If you use Kubernetes, set `orchestrator: kubernetes` and place your manifests in `.instantiate/docker-compose.yml`.
+If you use Kubernetes, set `orchestrator: kubernetes`. Instantiate looks for the manifest file `.instantiate/all.yml` by default. You can change this path using the `stackfile` option.
 
 ```yaml
 # .instantiate/config.yml
 orchestrator: kubernetes
+stackfile: all.yml
 expose_ports:
   - service: web
     port: 80
@@ -17,7 +18,7 @@ expose_ports:
 ```
 
 ```yaml
-# .instantiate/docker-compose.yml
+# .instantiate/all.yml
 apiVersion: apps/v1
 kind: Deployment
 metadata:

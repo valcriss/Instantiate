@@ -4,13 +4,14 @@ sidebar_position: 3
 
 # Configuration Docker
 
-Set `orchestrator: compose` in `.instantiate/config.yml` and provide a standard Compose template in `.instantiate/docker-compose.yml`.
+Set `orchestrator: compose` in `.instantiate/config.yml` and provide a standard Compose template. By default Instantiate reads `.instantiate/docker-compose.yml` but you can override this path with the `stackfile` property.
 
 Example:
 
 ```yaml
 # .instantiate/config.yml
 orchestrator: compose
+stackfile: docker-compose.yml
 expose_ports:
   - service: app
     port: 3000

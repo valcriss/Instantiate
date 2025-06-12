@@ -4,11 +4,12 @@ sidebar_position: 4
 
 # Configuration Swarm
 
-To deploy stacks on Docker Swarm set `orchestrator: swarm` and use a Compose file with Swarm specific options.
+To deploy stacks on Docker Swarm set `orchestrator: swarm` and use a Compose file with Swarm specific options. The stack template defaults to `.instantiate/docker-compose.yml` and can be changed with the `stackfile` option.
 
 ```yaml
 # .instantiate/config.yml
 orchestrator: swarm
+stackfile: docker-compose.yml
 expose_ports:
   - service: web
     port: 80

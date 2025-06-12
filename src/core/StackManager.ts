@@ -52,22 +52,24 @@ export class StackManager {
         return null
       }
 
-      const composeInput = path.join(tmpPath, '.instantiate', 'docker-compose.yml')
-      const composeExists = await fs
-        .stat(composeInput)
-        .then(() => true)
-        .catch(() => false)
-      if (!composeExists) {
-        logger.warn(`[stack] Unable to find the docker-compose file in current branch [${payload.branch}] : ${composeInput}`)
-        return null
-      }
-
       await db.updateMergeRequest(payload, payload.status)
 
       // Lecture du fichier de configuration
       const configRaw = await fs.readFile(configPath, 'utf-8')
       const config = YAML.parse(configRaw)
       const orchestrator = config.orchestrator ?? 'compose'
+      const stackfileName = config.stackfile ?? (orchestrator === 'kubernetes' ? 'all.yml' : 'docker-compose.yml')
+
+      const composeInput = path.join(tmpPath, '.instantiate', stackfileName)
+      const composeExists = await fs
+        .stat(composeInput)
+        .then(() => true)
+        .catch(() => false)
+      if (!composeExists) {
+        logger.warn(`[stack] Unable to find the stack template file in current branch [${payload.branch}] : ${composeInput}`)
+        return null
+      }
+
       const adapter = getOrchestratorAdapter(orchestrator)
       const composeOutput = path.join(tmpPath, 'docker-compose.yml')
 
