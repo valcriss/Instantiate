@@ -72,10 +72,23 @@ export class StackManager {
 
       const repoPaths: Record<string, string> = {}
       if (config.repositories) {
-        const repos = config.repositories as Record<string, { repo: string; branch: string }>
+        const repos = config.repositories as Record<string, { repo: string; branch?: string; behavior?: string }>
         for (const [name, repoCfg] of Object.entries(repos)) {
           const repoPath = path.join(tmpPath, name)
-          await git.clone(repoCfg.repo, repoPath, ['--branch', repoCfg.branch])
+          let branchToClone = repoCfg.branch
+          const behavior = repoCfg.behavior ?? 'fixed'
+          if (behavior === 'match') {
+            try {
+              const result = await git.listRemote(['--heads', repoCfg.repo, payload.branch])
+              if (result.trim().length > 0) {
+                branchToClone = payload.branch
+              }
+            } catch {
+              // ignore if ls-remote fails
+            }
+          }
+          const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
+          await git.clone(repoCfg.repo, repoPath, cloneArgs)
           repoPaths[name.toUpperCase() + '_PATH'] = repoPath
         }
       }

@@ -16,11 +16,17 @@ repositories:
   backend:
     repo: git@github.com:org/backend.git
     branch: develop
+    behavior: match
 expose_ports:
   - service: app
     port: 3000
     name: APP_PORT
 ```
+
+The `behavior` property controls how Instantiate selects the branch to clone:
+
+- `fixed` (default) always clones the branch specified in `branch` (or the repository's default branch if `branch` is omitted).
+- `match` tries to clone a branch with the same name as the merge request. If that branch does not exist, the value of `branch` or the default branch is used instead.
 
 ```yaml
 # .instantiate/docker-compose.yml
