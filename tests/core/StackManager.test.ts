@@ -4,6 +4,7 @@ import fs from 'fs/promises'
 import YAML from 'yaml'
 import { TemplateEngine } from '../../src/core/TemplateEngine'
 import { DockerComposeAdapter } from '../../src/orchestrators/DockerComposeAdapter'
+import { KubernetesAdapter } from '../../src/orchestrators/KubernetesAdapter'
 import db from '../../src/db'
 import { PortAllocator } from '../../src/core/PortAllocator'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
@@ -17,6 +18,7 @@ jest.mock('fs/promises')
 jest.mock('yaml')
 jest.mock('../../src/core/TemplateEngine')
 jest.mock('../../src/orchestrators/DockerComposeAdapter')
+jest.mock('../../src/orchestrators/KubernetesAdapter')
 jest.mock('../../src/db')
 jest.mock('../../src/core/PortAllocator')
 
@@ -25,6 +27,7 @@ const mockFs = fs as jest.Mocked<typeof fs>
 const mockYaml = YAML as unknown as { parse: jest.Mock }
 const mockTemplateEngine = TemplateEngine as jest.Mocked<typeof TemplateEngine>
 const mockDocker = DockerComposeAdapter as unknown as jest.MockedClass<typeof DockerComposeAdapter>
+const mockK8s = KubernetesAdapter as unknown as jest.MockedClass<typeof KubernetesAdapter>
 const mockDb = db as jest.Mocked<typeof db>
 const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
 
@@ -50,6 +53,8 @@ describe('StackManager.deploy', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    delete process.env.HOST_DOMAIN
+    delete process.env.HOST_SCHEME
   })
 
   afterAll(async () => {
@@ -426,5 +431,45 @@ describe('StackManager environment variables', () => {
     const hostDns = await stackManager.deploy(payload, 'test-key')
 
     expect(hostDns).toContain('https://custom-domain')
+  })
+})
+
+describe('StackManager additional branches', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    delete process.env.HOST_DOMAIN
+    delete process.env.HOST_SCHEME
+  })
+
+  it('deploys using kubernetes orchestrator without exposed ports', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const stackManager = new StackManager()
+    const payload: MergeRequestPayload = {
+      project_id: 'proj',
+      projectName: '',
+      mergeRequestName: '',
+      mr_id: 'mr-77',
+      mr_iid: 'mr-77',
+      status: 'open',
+      branch: 'feat',
+      repo: 'repo/url',
+      sha: 'deadbeef',
+      author: 'me',
+      full_name: 'me/repo',
+      provider: 'github'
+    }
+
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockYaml.parse.mockReturnValue({ orchestrator: 'kubernetes' })
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockK8s.prototype.up.mockResolvedValue()
+
+    const hostDns = await stackManager.deploy(payload, 'key')
+
+    expect(mockK8s.prototype.up).toHaveBeenCalled()
+    expect(mockPorts.allocatePort).not.toHaveBeenCalled()
+    expect(mockTemplateEngine.renderToFile).toHaveBeenCalledWith(expect.stringContaining('all.yml'), expect.any(String), expect.any(Object))
+    expect(hostDns).toContain('http')
   })
 })
