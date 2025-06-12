@@ -133,6 +133,34 @@ describe('StackManager.deploy', () => {
     )
   })
 
+  it('clones repositories from config and injects their paths', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockYaml.parse.mockReturnValue({
+      repositories: {
+        backend: { repo: 'git@github.com:org/backend.git', branch: 'develop' }
+      }
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(payload, projectKey)
+
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'])
+    expect(mockTemplateEngine.renderToFile).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({ BACKEND_PATH: expect.stringContaining('/backend') })
+    )
+  })
+
   it("utilise simpleGit avec l'option sslVerify=false quand IGNORE_SSL_ERRORS est a true", async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
     process.env.IGNORE_SSL_ERRORS = 'true'
