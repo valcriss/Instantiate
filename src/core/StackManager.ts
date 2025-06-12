@@ -70,6 +70,16 @@ export class StackManager {
         return null
       }
 
+      const repoPaths: Record<string, string> = {}
+      if (config.repositories) {
+        const repos = config.repositories as Record<string, { repo: string; branch: string }>
+        for (const [name, repoCfg] of Object.entries(repos)) {
+          const repoPath = path.join(tmpPath, name)
+          await git.clone(repoCfg.repo, repoPath, ['--branch', repoCfg.branch])
+          repoPaths[name.toUpperCase() + '_PATH'] = repoPath
+        }
+      }
+
       const adapter = getOrchestratorAdapter(orchestrator)
       const composeOutput = path.join(tmpPath, 'docker-compose.yml')
 
@@ -91,6 +101,7 @@ export class StackManager {
         HOST_DNS: hostDns,
         HOST_DOMAIN: hostDomain,
         HOST_SCHEME: hostScheme,
+        ...repoPaths,
         ...ports // injecte WEB_PORT, API_PORT, etc.
       }
 

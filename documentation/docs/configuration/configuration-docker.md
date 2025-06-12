@@ -12,6 +12,10 @@ Example:
 # .instantiate/config.yml
 orchestrator: compose
 stackfile: docker-compose.yml
+repositories:
+  backend:
+    repo: git@github.com:org/backend.git
+    branch: develop
 expose_ports:
   - service: app
     port: 3000
@@ -25,4 +29,7 @@ services:
     build: .
     ports:
       - "{{APP_PORT}}:3000"
+  backend:
+    build:
+      context: {{BACKEND_PATH}}
 ```

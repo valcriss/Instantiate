@@ -12,6 +12,7 @@ Instantiate renders the stack template defined in `.instantiate/config.yml` usin
 - `HOST_SCHEME` - value from the `HOST_SCHEME` environment variable.
 - `HOST_DNS` - combination of `HOST_SCHEME` and `HOST_DOMAIN`.
 - Port variables defined in `.instantiate/config.yml` under `expose_ports` (for example `WEB_PORT`, `API_PORT`, ...). Each variable receives a dynamic port allocated for the stack.
+- `*_PATH` - path on disk of repositories defined under `repositories` in `.instantiate/config.yml`. The variable name is the repository key uppercased followed by `_PATH` (e.g. `BACKEND_PATH`).
 
 Example usage:
 
