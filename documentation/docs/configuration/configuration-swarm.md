@@ -10,10 +10,10 @@ To deploy stacks on Docker Swarm set `orchestrator: swarm` and use a Compose fil
 # .instantiate/config.yml
 orchestrator: swarm
 stackfile: docker-compose.yml
-expose_ports:
-  - service: web
+
+services:
+  web:
     port: 80
-    name: WEB_PORT
 ```
 
 ```yaml

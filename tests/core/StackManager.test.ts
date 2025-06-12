@@ -72,10 +72,10 @@ describe('StackManager.deploy', () => {
     // Mock lecture du fichier YAML
     mockFs.readFile.mockResolvedValueOnce('fake-yaml-content')
     mockYaml.parse.mockReturnValue({
-      expose_ports: [
-        { service: 'web', name: 'WEB_PORT', port: 3000 },
-        { service: 'api', name: 'API_PORT', port: 8000 }
-      ]
+      services: {
+        web: { port: 3000 },
+        api: { port: 8000 }
+      }
     })
 
     // Mock ports dynamiques
@@ -141,8 +141,8 @@ describe('StackManager.deploy', () => {
 
     mockFs.readFile.mockResolvedValueOnce('yaml')
     mockYaml.parse.mockReturnValue({
-      repositories: {
-        backend: { repo: 'git@github.com:org/backend.git', branch: 'develop' }
+      services: {
+        backend: { repository: { repo: 'git@github.com:org/backend.git', branch: 'develop' } }
       }
     })
 
@@ -169,8 +169,8 @@ describe('StackManager.deploy', () => {
 
     mockFs.readFile.mockResolvedValueOnce('yaml')
     mockYaml.parse.mockReturnValue({
-      repositories: {
-        backend: { repo: 'git@github.com:org/backend.git', branch: 'develop', behavior: 'match' }
+      services: {
+        backend: { repository: { repo: 'git@github.com:org/backend.git', branch: 'develop', behavior: 'match' } }
       }
     })
 
@@ -193,8 +193,8 @@ describe('StackManager.deploy', () => {
 
     mockFs.readFile.mockResolvedValueOnce('yaml')
     mockYaml.parse.mockReturnValue({
-      repositories: {
-        backend: { repo: 'git@github.com:org/backend.git', branch: 'develop', behavior: 'match' }
+      services: {
+        backend: { repository: { repo: 'git@github.com:org/backend.git', branch: 'develop', behavior: 'match' } }
       }
     })
 
@@ -237,7 +237,9 @@ describe('StackManager.deploy', () => {
 
     mockFs.readFile.mockResolvedValueOnce('yaml')
     mockYaml.parse.mockReturnValue({
-      expose_ports: [{ service: 'web', port: 3000, name: 'WEB_PORT' }]
+      services: {
+        web: { port: 3000 }
+      }
     })
 
     mockPorts.allocatePort.mockResolvedValueOnce(10001)
