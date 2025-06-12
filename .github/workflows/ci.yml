@@ -27,7 +27,7 @@ jobs:
         run: npm run lint
 
       - name: 🧪 Tests + Coverage
-        run: npm run test:coverage
+        run: npm run test
 
       - name: 🚀 Déploiement de la documentation
         if: github.ref == 'refs/heads/main'
