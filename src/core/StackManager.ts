@@ -103,24 +103,16 @@ export class StackManager {
       const ports: Record<string, number> = {}
       const portsLinks: Record<string, string> = {}
       if (config.services) {
-        const services = config.services as Record<string, { port?: number; ports?: number[] }>
+        const services = config.services as Record<string, { ports?: number }>
         for (const [serviceName, serviceCfg] of Object.entries(services)) {
-          const definedPorts: number[] = []
-          if (typeof serviceCfg.port === 'number') {
-            definedPorts.push(serviceCfg.port)
-          }
-          if (Array.isArray(serviceCfg.ports)) {
-            definedPorts.push(...serviceCfg.ports)
-          }
-          let index = 1
-          for (const internal of definedPorts) {
-            const varName = definedPorts.length > 1 ? `${serviceName.toUpperCase()}_PORT_${index}` : `${serviceName.toUpperCase()}_PORT`
-            const ext = await PortAllocator.allocatePort(projectId, mrId, serviceName, varName, internal)
+          const count = typeof serviceCfg.ports === 'number' ? serviceCfg.ports : 0
+          for (let index = 1; index <= count; index++) {
+            const varName = count > 1 ? `${serviceName.toUpperCase()}_PORT_${index}` : `${serviceName.toUpperCase()}_PORT`
+            const ext = await PortAllocator.allocatePort(projectId, mrId, serviceName, varName)
             ports[varName] = ext
             if (!portsLinks[serviceName]) {
               portsLinks[serviceName] = `${hostDns}:${ext}`
             }
-            index++
           }
         }
       }

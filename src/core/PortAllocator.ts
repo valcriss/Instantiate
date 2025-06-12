@@ -12,7 +12,7 @@ export class PortAllocator {
   private static get portMax(): number {
     return parseInt(process.env.PORT_MAX ?? DEFAULT_PORT_MAX.toString(), 10)
   }
-  static async allocatePort(projectId: string, mrId: string, service: string, name: string, internalPort: number): Promise<number> {
+  static async allocatePort(projectId: string, mrId: string, service: string, name: string): Promise<number> {
     const alreadyAllocatedPort = await db.allreadyAllocatedPort(projectId, mrId, service, name)
     if (alreadyAllocatedPort) {
       logger.info(`[port] Port already allocated : ${alreadyAllocatedPort} for ${service} ${name} (MR:${mrId})`)
@@ -23,7 +23,7 @@ export class PortAllocator {
     const max = PortAllocator.portMax
     for (let port = min; port <= max; port++) {
       if (!usedPorts.has(port)) {
-        await db.addExposedPorts(projectId, mrId, service, name, internalPort, port)
+        await db.addExposedPorts(projectId, mrId, service, name, 0, port)
         logger.info(`[port] Port allocated : ${port} for ${service} ${name} (MR:${mrId})`)
         return port
       }

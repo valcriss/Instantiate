@@ -73,8 +73,8 @@ describe('StackManager.deploy', () => {
     mockFs.readFile.mockResolvedValueOnce('fake-yaml-content')
     mockYaml.parse.mockReturnValue({
       services: {
-        web: { port: 3000 },
-        api: { port: 8000 }
+        web: { ports: 1 },
+        api: { ports: 1 }
       }
     })
 
@@ -96,8 +96,8 @@ describe('StackManager.deploy', () => {
     // ✅ Assertions clés
     expect(fakeGit.clone).toHaveBeenCalled()
     expect(mockFs.readFile).toHaveBeenCalled()
-    expect(mockPorts.allocatePort).toHaveBeenCalledWith('valcriss', 'mr-42', 'web', 'WEB_PORT', 3000)
-    expect(mockPorts.allocatePort).toHaveBeenCalledWith('valcriss', 'mr-42', 'api', 'API_PORT', 8000)
+    expect(mockPorts.allocatePort).toHaveBeenCalledWith('valcriss', 'mr-42', 'web', 'WEB_PORT')
+    expect(mockPorts.allocatePort).toHaveBeenCalledWith('valcriss', 'mr-42', 'api', 'API_PORT')
 
     expect(mockTemplateEngine.renderToFile).toHaveBeenCalledWith(
       expect.stringContaining('docker-compose.yml'),
@@ -238,7 +238,7 @@ describe('StackManager.deploy', () => {
     mockFs.readFile.mockResolvedValueOnce('yaml')
     mockYaml.parse.mockReturnValue({
       services: {
-        web: { port: 3000 }
+        web: { ports: 1 }
       }
     })
 
