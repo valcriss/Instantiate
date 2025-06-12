@@ -11,10 +11,10 @@ If you use Kubernetes, set `orchestrator: kubernetes`. Instantiate looks for the
 # .instantiate/config.yml
 orchestrator: kubernetes
 stackfile: all.yml
-expose_ports:
-  - service: web
+
+services:
+  web:
     port: 80
-    name: WEB_PORT
 ```
 
 ```yaml

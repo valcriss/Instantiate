@@ -71,25 +71,28 @@ export class StackManager {
       }
 
       const repoPaths: Record<string, string> = {}
-      if (config.repositories) {
-        const repos = config.repositories as Record<string, { repo: string; branch?: string; behavior?: string }>
-        for (const [name, repoCfg] of Object.entries(repos)) {
-          const repoPath = path.join(tmpPath, name)
-          let branchToClone = repoCfg.branch
-          const behavior = repoCfg.behavior ?? 'fixed'
-          if (behavior === 'match') {
-            try {
-              const result = await git.listRemote(['--heads', repoCfg.repo, payload.branch])
-              if (result.trim().length > 0) {
-                branchToClone = payload.branch
+      if (config.services) {
+        const services = config.services as Record<string, { repository?: { repo: string; branch?: string; behavior?: string } }>
+        for (const [serviceName, serviceCfg] of Object.entries(services)) {
+          if (serviceCfg.repository) {
+            const repoCfg = serviceCfg.repository
+            const repoPath = path.join(tmpPath, serviceName)
+            let branchToClone = repoCfg.branch
+            const behavior = repoCfg.behavior ?? 'fixed'
+            if (behavior === 'match') {
+              try {
+                const result = await git.listRemote(['--heads', repoCfg.repo, payload.branch])
+                if (result.trim().length > 0) {
+                  branchToClone = payload.branch
+                }
+              } catch {
+                // ignore if ls-remote fails
               }
-            } catch {
-              // ignore if ls-remote fails
             }
+            const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
+            await git.clone(repoCfg.repo, repoPath, cloneArgs)
+            repoPaths[serviceName.toUpperCase() + '_PATH'] = repoPath
           }
-          const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
-          await git.clone(repoCfg.repo, repoPath, cloneArgs)
-          repoPaths[name.toUpperCase() + '_PATH'] = repoPath
         }
       }
 
@@ -99,11 +102,26 @@ export class StackManager {
       // Préparation des ports dynamiques pour chaque service déclaré
       const ports: Record<string, number> = {}
       const portsLinks: Record<string, string> = {}
-      if (config.expose_ports) {
-        for (const entry of config.expose_ports) {
-          const port = await PortAllocator.allocatePort(projectId, mrId, entry.service, entry.name, entry.port)
-          ports[entry.name] = port
-          portsLinks[entry.service] = `${hostDns}:${port}`
+      if (config.services) {
+        const services = config.services as Record<string, { port?: number; ports?: number[] }>
+        for (const [serviceName, serviceCfg] of Object.entries(services)) {
+          const definedPorts: number[] = []
+          if (typeof serviceCfg.port === 'number') {
+            definedPorts.push(serviceCfg.port)
+          }
+          if (Array.isArray(serviceCfg.ports)) {
+            definedPorts.push(...serviceCfg.ports)
+          }
+          let index = 1
+          for (const internal of definedPorts) {
+            const varName = definedPorts.length > 1 ? `${serviceName.toUpperCase()}_PORT_${index}` : `${serviceName.toUpperCase()}_PORT`
+            const ext = await PortAllocator.allocatePort(projectId, mrId, serviceName, varName, internal)
+            ports[varName] = ext
+            if (!portsLinks[serviceName]) {
+              portsLinks[serviceName] = `${hostDns}:${ext}`
+            }
+            index++
+          }
         }
       }
 

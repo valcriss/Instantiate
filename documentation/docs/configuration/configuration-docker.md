@@ -12,15 +12,17 @@ Example:
 # .instantiate/config.yml
 orchestrator: compose
 stackfile: docker-compose.yml
-repositories:
-  backend:
-    repo: git@github.com:org/backend.git
-    branch: develop
-    behavior: match
-expose_ports:
-  - service: app
+
+services:
+  app:
     port: 3000
-    name: APP_PORT
+  backend:
+    repository:
+      repo: git@github.com:org/backend.git
+      branch: develop
+      behavior: match
+    ports:
+      - 8080
 ```
 
 The `behavior` property controls how Instantiate selects the branch to clone:
