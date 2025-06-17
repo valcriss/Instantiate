@@ -23,7 +23,7 @@ export async function validateStackFile(filePath: string, orchestrator: Orchestr
 
   if (orchestrator === 'compose' || orchestrator === 'swarm') {
     const res = await fetch(COMPOSE_SCHEMA_URL)
-    const composeSchema : object = (await res.json()) as object
+    const composeSchema = (await res.json()) as object
     const ajv = new Ajv({ meta: false })
     //ajv.addMetaSchema(require('ajv/dist/refs/json-schema-draft-07.json'))
     const validate = ajv.compile(composeSchema)
