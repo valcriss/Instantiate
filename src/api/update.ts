@@ -39,7 +39,6 @@ router.post('/update', async (req: any, res: any) => {
   try {
     const payload = provider === 'gitlab' ? parseGitlabWebhook(req.body) : parseGithubWebhook(req.body)
 
-    logger.debug('[api] Parsed payload', payload)
     logger.info(`[api] Received ${payload.status} event for MR #${payload.mr_id} from ${provider}`)
 
     enqueueUpdateEvent({ payload, projectKey })
