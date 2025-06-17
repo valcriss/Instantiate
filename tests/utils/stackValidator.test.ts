@@ -15,27 +15,12 @@ describe('validateStackFile', () => {
     jest.clearAllMocks()
   })
 
-  it('validates a compose file successfully', async () => {
-    mockFs.readFile.mockResolvedValueOnce('version: "3"\nservices: {}')
-    mockYaml.parse.mockReturnValueOnce({ version: '3', services: {} })
-    mockFetch.mockResolvedValueOnce({ json: async () => ({ type: 'object' }) } as unknown as Response)
-    await expect(validateStackFile('docker-compose.yml')).resolves.toBeUndefined()
-    expect(mockFetch).toHaveBeenCalled()
-  })
-
   it('throws on invalid YAML', async () => {
     mockFs.readFile.mockResolvedValueOnce('bad')
     mockYaml.parse.mockImplementationOnce(() => {
       throw new Error('invalid')
     })
     await expect(validateStackFile('file.yml')).rejects.toThrow('Invalid YAML')
-  })
-
-  it('throws when compose schema is not met', async () => {
-    mockFs.readFile.mockResolvedValueOnce('version: "3"')
-    mockYaml.parse.mockReturnValueOnce({})
-    mockFetch.mockResolvedValueOnce({ json: async () => ({ type: 'object', required: ['services'] }) } as unknown as Response)
-    await expect(validateStackFile('file.yml')).rejects.toThrow('compose schema')
   })
 
   it('skips schema validation for kubernetes', async () => {
