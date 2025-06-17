@@ -54,7 +54,6 @@ router.post('/update', async (req: any, res: any) => {
 export function enqueueUpdateEvent(data: { payload: MergeRequestPayload; projectKey: string }) {
   try {
     ensureMQTTClientIsInitialized()
-    logger.debug('[api] Publishing update event', data)
     publishUpdateEvent(data)
   } catch (err) {
     logger.error({ err }, '[api] Failed to enqueue update event')
