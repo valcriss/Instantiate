@@ -8,6 +8,11 @@ import { MergeRequestPayload } from '../types/MergeRequestPayload'
 const router = express.Router()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 router.post('/update', async (req: any, res: any) => {
+  logger.debug('[api] Incoming webhook', {
+    query: req.query,
+    headers: req.headers
+  })
+
   const projectKey = req.query.key as string
   const headers = req.headers
 
@@ -24,6 +29,8 @@ router.post('/update', async (req: any, res: any) => {
     provider = 'github'
   }
 
+  logger.debug('[api] Determined provider', provider)
+
   if (!provider) {
     logger.warn('[api] Unsupported source control provider')
     return res.status(400).json({ error: 'Unsupported source control provider' })
@@ -32,13 +39,14 @@ router.post('/update', async (req: any, res: any) => {
   try {
     const payload = provider === 'gitlab' ? parseGitlabWebhook(req.body) : parseGithubWebhook(req.body)
 
+    logger.debug('[api] Parsed payload', payload)
     logger.info(`[api] Received ${payload.status} event for MR #${payload.mr_id} from ${provider}`)
 
     enqueueUpdateEvent({ payload, projectKey })
 
     res.status(200).json({ success: true })
   } catch (err: unknown) {
-    logger.error('[api] Error handling webhook', err)
+    logger.error({ err }, '[api] Error handling webhook')
     res.status(500).json({ error: 'Internal error', err: (err as Error).message })
   }
 })
@@ -46,9 +54,10 @@ router.post('/update', async (req: any, res: any) => {
 export function enqueueUpdateEvent(data: { payload: MergeRequestPayload; projectKey: string }) {
   try {
     ensureMQTTClientIsInitialized()
+    logger.debug('[api] Publishing update event', data)
     publishUpdateEvent(data)
   } catch (err) {
-    logger.error('[api] Failed to enqueue update event')
+    logger.error({ err }, '[api] Failed to enqueue update event')
   }
 }
 
