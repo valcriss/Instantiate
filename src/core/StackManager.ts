@@ -7,6 +7,7 @@ import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import db from '../db'
 import logger from '../utils/logger'
 import { TemplateEngine } from './TemplateEngine'
+import { validateStackFile } from '../utils/stackValidator'
 import { getOrchestratorAdapter } from '../orchestrators'
 import { PortAllocator } from './PortAllocator'
 import { CommentService } from '../comments/CommentService'
@@ -143,6 +144,9 @@ export class StackManager {
         ...repoPaths,
         ...ports // injecte WEB_PORT, API_PORT, etc.
       }
+
+      // Validation du fichier de stack avant substitution
+      await validateStackFile(composeInput, orchestrator)
 
       // Substitution du docker-compose
       await TemplateEngine.renderToFile(composeInput, composeOutput, context)

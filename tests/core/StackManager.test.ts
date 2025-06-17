@@ -70,8 +70,8 @@ describe('StackManager.deploy', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
-    // Mock lecture du fichier YAML
-    mockFs.readFile.mockResolvedValueOnce('fake-yaml-content')
+    // Mock lecture du fichier YAML (config et stack)
+    mockFs.readFile.mockResolvedValue('fake-yaml-content')
     mockYaml.parse.mockReturnValue({
       services: {
         web: { ports: 1 },
@@ -146,7 +146,7 @@ describe('StackManager.deploy', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
     const commentSpy = jest.spyOn(GitHubCommenter.prototype, 'postStatusComment').mockResolvedValue()
-    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({})
     mockTemplateEngine.renderToFile.mockResolvedValue()
     mockDocker.prototype.up.mockResolvedValue()
@@ -174,7 +174,7 @@ describe('StackManager.deploy', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
     const commentSpy = jest.spyOn(GitHubCommenter.prototype, 'postStatusComment').mockResolvedValue()
-    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({})
     mockTemplateEngine.renderToFile.mockResolvedValue()
     mockDocker.prototype.up.mockResolvedValue()
@@ -196,7 +196,7 @@ describe('StackManager.deploy', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
-    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({
       services: {
         backend: { repository: { repo: 'git@github.com:org/backend.git', branch: 'develop' } }
@@ -224,7 +224,7 @@ describe('StackManager.deploy', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
-    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({
       services: {
         backend: { repository: { repo: 'git@github.com:org/backend.git', branch: 'develop', behavior: 'match' } }
@@ -248,7 +248,7 @@ describe('StackManager.deploy', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
-    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({
       services: {
         backend: { repository: { repo: 'git@github.com:org/backend.git', branch: 'develop', behavior: 'match' } }
@@ -273,7 +273,7 @@ describe('StackManager.deploy', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
     mockFs.stat.mockResolvedValue({} as Stats)
-    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({})
     mockTemplateEngine.renderToFile.mockResolvedValue()
     mockDocker.prototype.up.mockResolvedValue()
@@ -292,7 +292,7 @@ describe('StackManager.deploy', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
-    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({
       services: {
         web: { ports: 1 }
@@ -595,7 +595,7 @@ describe('StackManager additional branches', () => {
     }
 
     mockFs.stat.mockResolvedValue({} as Stats)
-    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({ orchestrator: 'kubernetes' })
     mockTemplateEngine.renderToFile.mockResolvedValue()
     mockK8s.prototype.up.mockResolvedValue()
