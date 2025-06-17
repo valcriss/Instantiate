@@ -27,7 +27,6 @@ export class StackManager {
     if (payload.provider === 'github') {
       cloneUrl = injectCredentialsIfMissing(cloneUrl, process.env.REPOSITORY_GITHUB_USERNAME, process.env.REPOSITORY_GITHUB_TOKEN)
     }
-    logger.debug(`[stack] Cloning repo ${cloneUrl}`)
     const hostDomain = process.env.HOST_DOMAIN ?? 'localhost'
     const hostScheme = process.env.HOST_SCHEME ?? 'http'
     const hostDns = `${hostScheme}://${hostDomain}`
