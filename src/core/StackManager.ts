@@ -85,22 +85,6 @@ export class StackManager {
           if (serviceCfg.repository) {
             const repoCfg = serviceCfg.repository
             const repoPath = path.join(tmpPath, serviceName)
-            let branchToClone = repoCfg.branch
-            const behavior = repoCfg.behavior ?? 'fixed'
-            logger.debug(`[stack] Side repo behavior ${behavior}`)
-            if (behavior === 'match') {
-              try {
-                const result = await git.listRemote(['--heads', repoCfg.repo, payload.branch])
-                logger.debug(`[stack] Side repo listRemote ${result}`)
-                if (result.trim().length > 0) {
-                  branchToClone = payload.branch
-                }
-              } catch(e) {
-                // ignore if ls-remote fails
-                logger.debug(`[stack] Side repo listRemote failed ${e}`)
-              }
-            }
-            const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
             let sideRepoUrl = repoCfg.repo
             if (payload.provider === 'gitlab') {
               sideRepoUrl = injectCredentialsIfMissing(sideRepoUrl, process.env.REPOSITORY_GITLAB_USERNAME, process.env.REPOSITORY_GITLAB_TOKEN)
@@ -108,6 +92,22 @@ export class StackManager {
             if (payload.provider === 'github') {
               sideRepoUrl = injectCredentialsIfMissing(sideRepoUrl, process.env.REPOSITORY_GITHUB_USERNAME, process.env.REPOSITORY_GITHUB_TOKEN)
             }
+            let branchToClone = repoCfg.branch
+            const behavior = repoCfg.behavior ?? 'fixed'
+            logger.debug(`[stack] Side repo behavior ${behavior}`)
+            if (behavior === 'match') {
+              try {
+                const result = await git.listRemote(['--heads', sideRepoUrl, payload.branch])
+                logger.debug(`[stack] Side repo listRemote ${result}`)
+                if (result.trim().length > 0) {
+                  branchToClone = payload.branch
+                }
+              } catch (e) {
+                // ignore if ls-remote fails
+                logger.debug(`[stack] Side repo listRemote failed ${e}`)
+              }
+            }
+            const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
             logger.debug(`[stack] Cloning side repo ${sideRepoUrl}`)
             await git.clone(sideRepoUrl, repoPath, cloneArgs)
             repoPaths[serviceName.toUpperCase() + '_PATH'] = repoPath
