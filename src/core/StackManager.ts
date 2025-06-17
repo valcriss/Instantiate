@@ -95,8 +95,9 @@ export class StackManager {
                 if (result.trim().length > 0) {
                   branchToClone = payload.branch
                 }
-              } catch {
+              } catch(e) {
                 // ignore if ls-remote fails
+                logger.debug(`[stack] Side repo listRemote failed ${e}`)
               }
             }
             const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
