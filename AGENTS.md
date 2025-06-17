@@ -5,5 +5,5 @@ Instantiate automatically spins up per-merge-request environments for repositori
 # Before each commit
 
 - Run `npm run lint` and ensure it finishes without any errors or warnings.
-- Execute `npm run test` and confirm that total coverage is **100%** with 100% for lines, branches and methods across the entire project.
+- Execute `npm run test` and confirm that total coverage is **100%** with 100% for lines, branches and methods across the entire project even for non modified files.
 - Run `npm run build` and check that it completes without errors or warnings.
