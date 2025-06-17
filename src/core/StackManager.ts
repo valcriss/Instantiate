@@ -88,9 +88,11 @@ export class StackManager {
             const repoPath = path.join(tmpPath, serviceName)
             let branchToClone = repoCfg.branch
             const behavior = repoCfg.behavior ?? 'fixed'
+            logger.debug(`[stack] Side repo behavior ${behavior}`)
             if (behavior === 'match') {
               try {
                 const result = await git.listRemote(['--heads', repoCfg.repo, payload.branch])
+                logger.debug(`[stack] Side repo listRemote ${result}`)
                 if (result.trim().length > 0) {
                   branchToClone = payload.branch
                 }
