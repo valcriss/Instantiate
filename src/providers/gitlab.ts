@@ -1,4 +1,5 @@
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
+import { injectCredentialsIfMissing } from '../utils/gitUrl'
 
 type GitlabReqBody = {
   object_attributes: {
@@ -21,18 +22,11 @@ type GitlabReqBody = {
 
 export function parseGitlabWebhook(body: GitlabReqBody): MergeRequestPayload {
   const mr = body.object_attributes
-  let authentification = null
   let url = body.project.git_http_url
-  if (process.env.REPOSITORY_GITLAB_USERNAME && process.env.REPOSITORY_GITLAB_TOKEN) {
-    authentification = `${process.env.REPOSITORY_GITLAB_USERNAME}:${process.env.REPOSITORY_GITLAB_TOKEN}`
-  }
   if (process.env.NODE_ENV === 'development') {
     url = url.replace('localhost', 'host.docker.internal')
   }
-  if (authentification) {
-    url = url.replace('https://', `https://${authentification}@`)
-    url = url.replace('http://', `http://${authentification}@`)
-  }
+  url = injectCredentialsIfMissing(url, process.env.REPOSITORY_GITLAB_USERNAME, process.env.REPOSITORY_GITLAB_TOKEN)
   return {
     project_id: body.project.id,
     projectName: body.project.name,

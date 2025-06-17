@@ -162,6 +162,34 @@ describe('StackManager.deploy', () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
   })
 
+  it('does not duplicate credentials if repo already contains them', async () => {
+    process.env.REPOSITORY_GITHUB_USERNAME = 'user'
+    process.env.REPOSITORY_GITHUB_TOKEN = 'secret'
+    const urlPayload: MergeRequestPayload = {
+      ...payload,
+      repo: 'https://user:secret@github.com/test/repo.git'
+    }
+
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+    const commentSpy = jest.spyOn(GitHubCommenter.prototype, 'postStatusComment').mockResolvedValue()
+    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockYaml.parse.mockReturnValue({})
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(urlPayload, projectKey)
+
+    expect(fakeGit.clone).toHaveBeenCalledWith('https://user:secret@github.com/test/repo.git', expect.any(String), ['--branch', urlPayload.branch])
+
+    commentSpy.mockRestore()
+    delete process.env.REPOSITORY_GITHUB_USERNAME
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+  })
+
   it('clones repositories from config and injects their paths', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
     const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn() }
