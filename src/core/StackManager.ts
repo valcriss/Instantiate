@@ -18,7 +18,17 @@ export class StackManager {
     const projectId = payload.project_id
     const mrId = payload.mr_id
     const tmpPath = path.join(os.tmpdir(), 'instantiate', projectId.toString(), mrId.toString())
-    const cloneUrl = `${payload.repo}`
+    let cloneUrl = `${payload.repo}`
+    if (payload.provider === 'gitlab' && process.env.REPOSITORY_GITLAB_USERNAME && process.env.REPOSITORY_GITLAB_TOKEN) {
+      const creds = `${process.env.REPOSITORY_GITLAB_USERNAME}:${process.env.REPOSITORY_GITLAB_TOKEN}`
+      cloneUrl = cloneUrl.replace('https://', `https://${creds}@`)
+      cloneUrl = cloneUrl.replace('http://', `http://${creds}@`)
+    }
+    if (payload.provider === 'github' && process.env.REPOSITORY_GITHUB_USERNAME && process.env.REPOSITORY_GITHUB_TOKEN) {
+      const creds = `${process.env.REPOSITORY_GITHUB_USERNAME}:${process.env.REPOSITORY_GITHUB_TOKEN}`
+      cloneUrl = cloneUrl.replace('https://', `https://${creds}@`)
+      cloneUrl = cloneUrl.replace('http://', `http://${creds}@`)
+    }
     const hostDomain = process.env.HOST_DOMAIN ?? 'localhost'
     const hostScheme = process.env.HOST_SCHEME ?? 'http'
     const hostDns = `${hostScheme}://${hostDomain}`

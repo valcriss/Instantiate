@@ -12,6 +12,7 @@ import { PathLike, Stats } from 'fs'
 import logger, { closeLogger } from '../../src/utils/logger'
 import { closeConnection } from '../../src/mqtt/MQTTClient'
 import * as ioUtils from '../../src/utils/ioUtils'
+import { GitHubCommenter } from '../../src/comments/GitHubCommenter'
 
 jest.mock('simple-git')
 jest.mock('fs/promises')
@@ -131,6 +132,34 @@ describe('StackManager.deploy', () => {
       },
       'open'
     )
+  })
+
+  it('uses repository credentials when cloning the main repo', async () => {
+    process.env.REPOSITORY_GITHUB_USERNAME = 'user'
+    process.env.REPOSITORY_GITHUB_TOKEN = 'secret'
+    const urlPayload: MergeRequestPayload = {
+      ...payload,
+      repo: 'https://github.com/test/repo.git'
+    }
+
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+    const commentSpy = jest.spyOn(GitHubCommenter.prototype, 'postStatusComment').mockResolvedValue()
+    mockFs.readFile.mockResolvedValueOnce('yaml')
+    mockYaml.parse.mockReturnValue({})
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(urlPayload, projectKey)
+
+    expect(fakeGit.clone).toHaveBeenCalledWith('https://user:secret@github.com/test/repo.git', expect.any(String), ['--branch', urlPayload.branch])
+
+    commentSpy.mockRestore()
+    delete process.env.REPOSITORY_GITHUB_USERNAME
+    delete process.env.REPOSITORY_GITHUB_TOKEN
   })
 
   it('clones repositories from config and injects their paths', async () => {
