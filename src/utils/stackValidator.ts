@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import YAML from 'yaml'
 import fetch from 'node-fetch'
-import Ajv, { type AnySchema } from 'ajv'
+import Ajv from 'ajv'
 
 const COMPOSE_SCHEMA_URL = 'https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json'
 
@@ -23,9 +23,9 @@ export async function validateStackFile(filePath: string, orchestrator: Orchestr
 
   if (orchestrator === 'compose' || orchestrator === 'swarm') {
     const res = await fetch(COMPOSE_SCHEMA_URL)
-    const composeSchema = (await res.json()) as AnySchema
+    const composeSchema : object = (await res.json()) as object
     const ajv = new Ajv({ meta: false })
-    ajv.addMetaSchema(require('ajv/dist/refs/json-schema-draft-07.json'))
+    //ajv.addMetaSchema(require('ajv/dist/refs/json-schema-draft-07.json'))
     const validate = ajv.compile(composeSchema)
     if (!validate(parsed)) {
       throw new Error(`[validator] ${filePath} does not match compose schema`)
