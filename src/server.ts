@@ -23,7 +23,7 @@ app.use(express.json())
 app.use('/api', updateRoute)
 app.use('/api', stacksApiRoute)
 app.use('/', stacksPageRoute)
-app.use(limiter);
+app.use(limiter)
 
 app.get('/', (req, res) => {
   res.send('Instantiate backend is running!')
