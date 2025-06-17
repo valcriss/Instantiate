@@ -137,6 +137,6 @@ describe('POST /api/update', () => {
 
     enqueueUpdateEvent({ payload: fakePayload, projectKey: 'key' })
 
-    expect(logger.error).toHaveBeenCalledWith('[api] Failed to enqueue update event')
+    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({ err: expect.any(Error) }), '[api] Failed to enqueue update event')
   })
 })
