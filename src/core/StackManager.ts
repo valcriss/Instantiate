@@ -26,6 +26,7 @@ export class StackManager {
     if (payload.provider === 'github') {
       cloneUrl = injectCredentialsIfMissing(cloneUrl, process.env.REPOSITORY_GITHUB_USERNAME, process.env.REPOSITORY_GITHUB_TOKEN)
     }
+    logger.debug(`[stack] Cloning repo ${cloneUrl}`)
     const hostDomain = process.env.HOST_DOMAIN ?? 'localhost'
     const hostScheme = process.env.HOST_SCHEME ?? 'http'
     const hostDns = `${hostScheme}://${hostDomain}`
@@ -97,7 +98,15 @@ export class StackManager {
               }
             }
             const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
-            await git.clone(repoCfg.repo, repoPath, cloneArgs)
+            let sideRepoUrl = repoCfg.repo
+            if (payload.provider === 'gitlab') {
+              sideRepoUrl = injectCredentialsIfMissing(sideRepoUrl, process.env.REPOSITORY_GITLAB_USERNAME, process.env.REPOSITORY_GITLAB_TOKEN)
+            }
+            if (payload.provider === 'github') {
+              sideRepoUrl = injectCredentialsIfMissing(sideRepoUrl, process.env.REPOSITORY_GITHUB_USERNAME, process.env.REPOSITORY_GITHUB_TOKEN)
+            }
+            logger.debug(`[stack] Cloning side repo ${sideRepoUrl}`)
+            await git.clone(sideRepoUrl, repoPath, cloneArgs)
             repoPaths[serviceName.toUpperCase() + '_PATH'] = repoPath
           }
         }
