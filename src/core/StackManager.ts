@@ -12,6 +12,7 @@ import { PortAllocator } from './PortAllocator'
 import { CommentService } from '../comments/CommentService'
 import { StackService } from './StackService'
 import { createDirectory, removeDirectory } from '../utils/ioUtils'
+import { injectCredentialsIfMissing } from '../utils/gitUrl'
 
 export class StackManager {
   async deploy(payload: MergeRequestPayload, projectKey: string) {
@@ -19,15 +20,11 @@ export class StackManager {
     const mrId = payload.mr_id
     const tmpPath = path.join(os.tmpdir(), 'instantiate', projectId.toString(), mrId.toString())
     let cloneUrl = `${payload.repo}`
-    if (payload.provider === 'gitlab' && process.env.REPOSITORY_GITLAB_USERNAME && process.env.REPOSITORY_GITLAB_TOKEN) {
-      const creds = `${process.env.REPOSITORY_GITLAB_USERNAME}:${process.env.REPOSITORY_GITLAB_TOKEN}`
-      cloneUrl = cloneUrl.replace('https://', `https://${creds}@`)
-      cloneUrl = cloneUrl.replace('http://', `http://${creds}@`)
+    if (payload.provider === 'gitlab') {
+      cloneUrl = injectCredentialsIfMissing(cloneUrl, process.env.REPOSITORY_GITLAB_USERNAME, process.env.REPOSITORY_GITLAB_TOKEN)
     }
-    if (payload.provider === 'github' && process.env.REPOSITORY_GITHUB_USERNAME && process.env.REPOSITORY_GITHUB_TOKEN) {
-      const creds = `${process.env.REPOSITORY_GITHUB_USERNAME}:${process.env.REPOSITORY_GITHUB_TOKEN}`
-      cloneUrl = cloneUrl.replace('https://', `https://${creds}@`)
-      cloneUrl = cloneUrl.replace('http://', `http://${creds}@`)
+    if (payload.provider === 'github') {
+      cloneUrl = injectCredentialsIfMissing(cloneUrl, process.env.REPOSITORY_GITHUB_USERNAME, process.env.REPOSITORY_GITHUB_TOKEN)
     }
     const hostDomain = process.env.HOST_DOMAIN ?? 'localhost'
     const hostScheme = process.env.HOST_SCHEME ?? 'http'

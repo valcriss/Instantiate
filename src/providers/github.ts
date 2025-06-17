@@ -1,4 +1,5 @@
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
+import { injectCredentialsIfMissing } from '../utils/gitUrl'
 
 type GithubReqBody = {
   pull_request: {
@@ -23,18 +24,11 @@ type GithubReqBody = {
 
 export function parseGithubWebhook(body: GithubReqBody): MergeRequestPayload {
   const pr = body.pull_request
-  let authentification = null
   let url = body.repository.clone_url
-  if (process.env.REPOSITORY_GITHUB_USERNAME && process.env.REPOSITORY_GITHUB_TOKEN) {
-    authentification = `${process.env.REPOSITORY_GITHUB_USERNAME}:${process.env.REPOSITORY_GITHUB_TOKEN}`
-  }
   if (process.env.NODE_ENV === 'development') {
     url = url.replace('localhost', 'host.docker.internal')
   }
-  if (authentification) {
-    url = url.replace('https://', `https://${authentification}@`)
-    url = url.replace('http://', `http://${authentification}@`)
-  }
+  url = injectCredentialsIfMissing(url, process.env.REPOSITORY_GITHUB_USERNAME, process.env.REPOSITORY_GITHUB_TOKEN)
   return {
     project_id: body.repository.id,
     mr_id: pr.id.toString(),
