@@ -108,7 +108,6 @@ export class StackManager {
               }
             }
             const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
-            logger.debug(`[stack] Cloning side repo ${sideRepoUrl}`)
             await git.clone(sideRepoUrl, repoPath, cloneArgs)
             repoPaths[serviceName.toUpperCase() + '_PATH'] = repoPath
           }
