@@ -24,7 +24,8 @@ export async function validateStackFile(filePath: string, orchestrator: Orchestr
   if (orchestrator === 'compose' || orchestrator === 'swarm') {
     const res = await fetch(COMPOSE_SCHEMA_URL)
     const composeSchema = (await res.json()) as AnySchema
-    const ajv = new Ajv()
+    const ajv = new Ajv({ meta: false })
+    ajv.addMetaSchema(require('ajv/dist/refs/json-schema-draft-07.json'))
     const validate = ajv.compile(composeSchema)
     if (!validate(parsed)) {
       throw new Error(`[validator] ${filePath} does not match compose schema`)
