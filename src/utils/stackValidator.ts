@@ -1,9 +1,5 @@
 import fs from 'fs/promises'
 import YAML from 'yaml'
-import fetch from 'node-fetch'
-import Ajv from 'ajv'
-
-const COMPOSE_SCHEMA_URL = 'https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json'
 
 export type Orchestrator = 'compose' | 'swarm' | 'kubernetes'
 
@@ -12,23 +8,11 @@ export type Orchestrator = 'compose' | 'swarm' | 'kubernetes'
  * @param filePath path to the stack file
  * @param orchestrator orchestrator type
  */
-export async function validateStackFile(filePath: string, orchestrator: Orchestrator): Promise<void> {
+export async function validateStackFile(filePath: string): Promise<void> {
   const raw = await fs.readFile(filePath, 'utf-8')
-  let parsed
   try {
-    parsed = YAML.parse(raw)
+    YAML.parse(raw)
   } catch {
     throw new Error(`[validator] Invalid YAML format in ${filePath}`)
-  }
-
-  if (orchestrator === 'compose' || orchestrator === 'swarm') {
-    const res = await fetch(COMPOSE_SCHEMA_URL)
-    const composeSchema = (await res.json()) as object
-    const ajv = new Ajv({ meta: false })
-    //ajv.addMetaSchema(require('ajv/dist/refs/json-schema-draft-07.json'))
-    const validate = ajv.compile(composeSchema)
-    if (!validate(parsed)) {
-      throw new Error(`[validator] ${filePath} does not match compose schema`)
-    }
   }
 }

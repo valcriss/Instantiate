@@ -147,7 +147,7 @@ export class StackManager {
       }
 
       // Validation du fichier de stack avant substitution
-      await validateStackFile(composeInput, orchestrator)
+      await validateStackFile(composeInput)
 
       // Substitution du docker-compose
       await TemplateEngine.renderToFile(composeInput, composeOutput, context)
