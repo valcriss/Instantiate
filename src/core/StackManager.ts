@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs/promises'
 import os from 'os'
-import simpleGit from 'simple-git'
+import simpleGit, { SimpleGit } from 'simple-git'
 import YAML from 'yaml'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import db from '../db'
@@ -35,107 +35,26 @@ export class StackManager {
       logger.info(`[stack] Starting the deployment of the stack for MR #${mrId}`)
       await db.updateMergeRequest(payload, payload.status)
       await commenter.postStatusComment(payload, 'in_progress')
-      // Nettoyage et préparation dossier temporaire
 
-      await removeDirectory(tmpPath)
-      const createDirectoryResult = await createDirectory(tmpPath)
-
-      if (!createDirectoryResult) {
-        logger.error(`[stack] Unable to create directory ${tmpPath}`)
+      if (!(await this.prepareTmpDir(tmpPath))) {
         return
       }
 
-      // Clonage du repo
       const git = simpleGit({ config: process.env.IGNORE_SSL_ERRORS === 'true' ? ['http.sslVerify=false'] : [] })
       await git.clone(cloneUrl, tmpPath, ['--branch', payload.branch])
 
-      // Lecture du fichier de config YAML
-      const configPath = path.join(tmpPath, '.instantiate', 'config.yml')
-      const configExists = await fs
-        .stat(configPath)
-        .then(() => true)
-        .catch(() => false)
-      if (!configExists) {
-        logger.warn(`[stack] Unable to find the configuration file in current branch [${payload.branch}] : ${configPath}`)
+      const configData = await this.loadConfiguration(tmpPath, payload.branch)
+      if (!configData) {
         return null
       }
 
       await db.updateMergeRequest(payload, payload.status)
 
-      // Lecture du fichier de configuration
-      const configRaw = await fs.readFile(configPath, 'utf-8')
-      const config = YAML.parse(configRaw)
-      const orchestrator = config.orchestrator ?? 'compose'
-      const stackfileName = config.stackfile ?? (orchestrator === 'kubernetes' ? 'all.yml' : 'docker-compose.yml')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const repoPaths = await this.cloneRepositories(git, payload, tmpPath, (configData.config as any).services)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { ports, portsLinks } = await this.allocateServicePorts((configData.config as any).services, projectId, mrId, hostDns)
 
-      const composeInput = path.join(tmpPath, '.instantiate', stackfileName)
-      const composeExists = await fs
-        .stat(composeInput)
-        .then(() => true)
-        .catch(() => false)
-      if (!composeExists) {
-        logger.warn(`[stack] Unable to find the stack template file in current branch [${payload.branch}] : ${composeInput}`)
-        return null
-      }
-
-      const repoPaths: Record<string, string> = {}
-      if (config.services) {
-        const services = config.services as Record<string, { repository?: { repo: string; branch?: string; behavior?: string } }>
-        for (const [serviceName, serviceCfg] of Object.entries(services)) {
-          if (serviceCfg.repository) {
-            const repoCfg = serviceCfg.repository
-            const repoPath = path.join(tmpPath, serviceName)
-            let sideRepoUrl = repoCfg.repo
-            if (payload.provider === 'gitlab') {
-              sideRepoUrl = injectCredentialsIfMissing(sideRepoUrl, process.env.REPOSITORY_GITLAB_USERNAME, process.env.REPOSITORY_GITLAB_TOKEN)
-            }
-            if (payload.provider === 'github') {
-              sideRepoUrl = injectCredentialsIfMissing(sideRepoUrl, process.env.REPOSITORY_GITHUB_USERNAME, process.env.REPOSITORY_GITHUB_TOKEN)
-            }
-            let branchToClone = repoCfg.branch
-            const behavior = repoCfg.behavior ?? 'fixed'
-            logger.debug(`[stack] Side repo behavior ${behavior}`)
-            if (behavior === 'match') {
-              try {
-                const result = await git.listRemote(['--heads', sideRepoUrl, payload.branch])
-                logger.debug(`[stack] Side repo listRemote ${result}`)
-                if (result.trim().length > 0) {
-                  branchToClone = payload.branch
-                }
-              } catch (e) {
-                // ignore if ls-remote fails
-                logger.debug(`[stack] Side repo listRemote failed ${e}`)
-              }
-            }
-            const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
-            await git.clone(sideRepoUrl, repoPath, cloneArgs)
-            repoPaths[serviceName.toUpperCase() + '_PATH'] = repoPath
-          }
-        }
-      }
-
-      const adapter = getOrchestratorAdapter(orchestrator)
-      const composeOutput = path.join(tmpPath, 'docker-compose.yml')
-
-      // Préparation des ports dynamiques pour chaque service déclaré
-      const ports: Record<string, number> = {}
-      const portsLinks: Record<string, string> = {}
-      if (config.services) {
-        const services = config.services as Record<string, { ports?: number }>
-        for (const [serviceName, serviceCfg] of Object.entries(services)) {
-          const count = typeof serviceCfg.ports === 'number' ? serviceCfg.ports : 0
-          for (let index = 1; index <= count; index++) {
-            const varName = count > 1 ? `${serviceName.toUpperCase()}_PORT_${index}` : `${serviceName.toUpperCase()}_PORT`
-            const ext = await PortAllocator.allocatePort(projectId, mrId, serviceName, varName)
-            ports[varName] = ext
-            if (!portsLinks[serviceName]) {
-              portsLinks[serviceName] = `${hostDns}:${ext}`
-            }
-          }
-        }
-      }
-
-      // Contexte pour le rendu du template
       const context = {
         MR_ID: mrId,
         PROJECT_KEY: projectKey,
@@ -143,30 +62,10 @@ export class StackManager {
         HOST_DOMAIN: hostDomain,
         HOST_SCHEME: hostScheme,
         ...repoPaths,
-        ...ports // injecte WEB_PORT, API_PORT, etc.
+        ...ports
       }
 
-      // Validation du fichier de stack avant substitution
-      await validateStackFile(composeInput)
-
-      // Substitution du docker-compose
-      await TemplateEngine.renderToFile(composeInput, composeOutput, context)
-
-      // Lancement des containers
-      await adapter.up(tmpPath, `${projectId}-mr-${mrId}`)
-      await commenter.postStatusComment(payload, 'ready', portsLinks)
-      logger.info(`[stack] Stack for the MR #${mrId} on project ${projectId} successfully deployed`)
-
-      StackService.save({
-        projectId,
-        projectName: payload.projectName,
-        mergeRequestName: payload.mergeRequestName,
-        ports: ports,
-        mr_id: payload.mr_id,
-        provider: payload.provider,
-        status: 'running',
-        links: portsLinks
-      })
+      await this.launchStack(tmpPath, configData.composeInput, configData.orchestrator, context, ports, portsLinks, payload, commenter)
 
       return hostDns
     } catch (err) {
@@ -207,5 +106,140 @@ export class StackManager {
       logger.error(`[stack] Error during the removal of the stack for MR #${mrId} on project ${projectId}`)
       throw err
     }
+  }
+
+  private async prepareTmpDir(tmpPath: string): Promise<boolean> {
+    await removeDirectory(tmpPath)
+    const created = await createDirectory(tmpPath)
+    if (!created) {
+      logger.error(`[stack] Unable to create directory ${tmpPath}`)
+    }
+    return created
+  }
+
+  private async loadConfiguration(tmpPath: string, branch: string): Promise<{ config: unknown; orchestrator: string; composeInput: string } | null> {
+    const configPath = path.join(tmpPath, '.instantiate', 'config.yml')
+    const configExists = await fs
+      .stat(configPath)
+      .then(() => true)
+      .catch(() => false)
+    if (!configExists) {
+      logger.warn(`[stack] Unable to find the configuration file in current branch [${branch}] : ${configPath}`)
+      return null
+    }
+
+    const configRaw = await fs.readFile(configPath, 'utf-8')
+    const config = YAML.parse(configRaw)
+    const orchestrator = config.orchestrator ?? 'compose'
+    const stackfileName = config.stackfile ?? (orchestrator === 'kubernetes' ? 'all.yml' : 'docker-compose.yml')
+    const composeInput = path.join(tmpPath, '.instantiate', stackfileName)
+    const composeExists = await fs
+      .stat(composeInput)
+      .then(() => true)
+      .catch(() => false)
+    if (!composeExists) {
+      logger.warn(`[stack] Unable to find the stack template file in current branch [${branch}] : ${composeInput}`)
+      return null
+    }
+
+    return { config, orchestrator, composeInput }
+  }
+
+  private async cloneRepositories(
+    git: SimpleGit,
+    payload: MergeRequestPayload,
+    tmpPath: string,
+    services?: Record<string, { repository?: { repo: string; branch?: string; behavior?: string } }>
+  ): Promise<Record<string, string>> {
+    const repoPaths: Record<string, string> = {}
+    if (services) {
+      for (const [serviceName, serviceCfg] of Object.entries(services)) {
+        if (serviceCfg.repository) {
+          const repoCfg = serviceCfg.repository
+          const repoPath = path.join(tmpPath, serviceName)
+          let sideRepoUrl = repoCfg.repo
+          if (payload.provider === 'gitlab') {
+            sideRepoUrl = injectCredentialsIfMissing(sideRepoUrl, process.env.REPOSITORY_GITLAB_USERNAME, process.env.REPOSITORY_GITLAB_TOKEN)
+          }
+          if (payload.provider === 'github') {
+            sideRepoUrl = injectCredentialsIfMissing(sideRepoUrl, process.env.REPOSITORY_GITHUB_USERNAME, process.env.REPOSITORY_GITHUB_TOKEN)
+          }
+          let branchToClone = repoCfg.branch
+          const behavior = repoCfg.behavior ?? 'fixed'
+          logger.debug(`[stack] Side repo behavior ${behavior}`)
+          if (behavior === 'match') {
+            try {
+              const result = await git.listRemote(['--heads', sideRepoUrl, payload.branch])
+              logger.debug(`[stack] Side repo listRemote ${result}`)
+              if (result.trim().length > 0) {
+                branchToClone = payload.branch
+              }
+            } catch (e) {
+              logger.debug(`[stack] Side repo listRemote failed ${e}`)
+            }
+          }
+          const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
+          await git.clone(sideRepoUrl, repoPath, cloneArgs)
+          repoPaths[serviceName.toUpperCase() + '_PATH'] = repoPath
+        }
+      }
+    }
+    return repoPaths
+  }
+
+  private async allocateServicePorts(
+    services: Record<string, { ports?: number }> | undefined,
+    projectId: string,
+    mrId: string,
+    hostDns: string
+  ): Promise<{ ports: Record<string, number>; portsLinks: Record<string, string> }> {
+    const ports: Record<string, number> = {}
+    const portsLinks: Record<string, string> = {}
+    if (services) {
+      for (const [serviceName, serviceCfg] of Object.entries(services)) {
+        const count = typeof serviceCfg.ports === 'number' ? serviceCfg.ports : 0
+        for (let index = 1; index <= count; index++) {
+          const varName = count > 1 ? `${serviceName.toUpperCase()}_PORT_${index}` : `${serviceName.toUpperCase()}_PORT`
+          const ext = await PortAllocator.allocatePort(projectId, mrId, serviceName, varName)
+          ports[varName] = ext
+          if (!portsLinks[serviceName]) {
+            portsLinks[serviceName] = `${hostDns}:${ext}`
+          }
+        }
+      }
+    }
+    return { ports, portsLinks }
+  }
+
+  private async launchStack(
+    tmpPath: string,
+    composeInput: string,
+    orchestrator: string,
+    context: Record<string, unknown>,
+    ports: Record<string, number>,
+    portsLinks: Record<string, string>,
+    payload: MergeRequestPayload,
+    commenter: ReturnType<typeof CommentService.getCommenter>
+  ): Promise<void> {
+    const adapter = getOrchestratorAdapter(orchestrator)
+    const composeOutput = path.join(tmpPath, 'docker-compose.yml')
+
+    await validateStackFile(composeInput)
+    await TemplateEngine.renderToFile(composeInput, composeOutput, context)
+
+    await adapter.up(tmpPath, `${payload.project_id}-mr-${payload.mr_id}`)
+    await commenter.postStatusComment(payload, 'ready', portsLinks)
+    logger.info(`[stack] Stack for the MR #${payload.mr_id} on project ${payload.project_id} successfully deployed`)
+
+    await StackService.save({
+      projectId: payload.project_id,
+      projectName: payload.projectName,
+      mergeRequestName: payload.mergeRequestName,
+      ports,
+      mr_id: payload.mr_id,
+      provider: payload.provider,
+      status: 'running',
+      links: portsLinks
+    })
   }
 }
