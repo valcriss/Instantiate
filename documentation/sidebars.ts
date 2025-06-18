@@ -28,9 +28,15 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Configuration',
       items: [
-        'configuration/configuration-docker',
-        'configuration/configuration-swarm',
-        'configuration/configuration-kubernetes',
+        {
+          type: 'category',
+          label: 'Orchestrators',
+          items: [
+            'configuration/orchestrators/configuration-docker',
+            'configuration/orchestrators/configuration-swarm',
+            'configuration/orchestrators/configuration-kubernetes',
+          ],
+        },
         'configuration/environment-variables',
         'configuration/template-variables'
       ],
