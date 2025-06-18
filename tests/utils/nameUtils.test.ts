@@ -2,9 +2,14 @@ import { sanitizeName, buildStackName } from '../../src/utils/nameUtils'
 
 describe('nameUtils', () => {
   describe('sanitizeName', () => {
-    it('removes accents and special characters', () => {
-      const result = sanitizeName('Pr\xE9s-\xE9ntation !')
-      expect(result).toBe('presentation')
+    it('removes accents, keeps dashes and replaces slashes', () => {
+      const result = sanitizeName('Pr\xE9s-\xE9nt/ation !')
+      expect(result).toBe('pres-ent-ation')
+    })
+
+    it('replaces backslashes with dashes', () => {
+      const result = sanitizeName('folder\\file')
+      expect(result).toBe('folder-file')
     })
   })
 
