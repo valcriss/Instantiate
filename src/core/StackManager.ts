@@ -15,7 +15,32 @@ import { StackService } from './StackService'
 import { createDirectory, removeDirectory } from '../utils/ioUtils'
 import { injectCredentialsIfMissing } from '../utils/gitUrl'
 
+/**
+ * Coordinates the creation and removal of ephemeral stacks for merge requests.
+ *
+ * A stack is deployed when a merge request is opened or updated and destroyed
+ * once the request is closed. The manager handles repository cloning,
+ * configuration loading, port allocation and orchestrator interaction.
+ */
 export class StackManager {
+  /**
+   * Deploy an environment for the given merge request.
+   *
+   * Workflow:
+   * - Record the merge request as "in progress" and notify via comment.
+   * - Create a temporary directory and clone the main repository.
+   * - Load `.instantiate/config.yml` and clone any additional repositories.
+   * - Allocate dynamic ports for services and render the stack template.
+   * - Start the orchestrator to launch the stack.
+   * - Save stack information in the database and comment the exposed links.
+   *
+   * Side effects include database updates, temporary file creation, port
+   * allocation and orchestrator execution.
+   *
+   * @param payload Merge request payload describing the environment to deploy.
+   * @param projectKey Key identifying the project for template substitutions.
+   * @returns The base URL where the stack will be reachable.
+   */
   async deploy(payload: MergeRequestPayload, projectKey: string) {
     const projectId = payload.project_id
     const mrId = payload.mr_id
@@ -74,6 +99,19 @@ export class StackManager {
     }
   }
 
+  /**
+   * Remove the environment associated with a merge request.
+   *
+   * Steps:
+   * - Determine the orchestrator used for the deployment.
+   * - Stop and remove the running stack.
+   * - Release any ports allocated for the services.
+   * - Update the merge request status and cleanup persisted data.
+   * - Delete the temporary working directory and post a closing comment.
+   *
+   * This method updates the database, interacts with the orchestrator and
+   * removes all artifacts created by {@link deploy}.
+   */
   async destroy(payload: MergeRequestPayload, projectKey: string) {
     const projectId = payload.project_id
     const mrId = payload.mr_id
