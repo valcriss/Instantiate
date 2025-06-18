@@ -4,10 +4,11 @@ import YAML from 'yaml'
 import { StackInfo, StackService, StackStatus } from '../core/StackService'
 import logger from '../utils/logger'
 import { getOrchestratorAdapter } from '../orchestrators'
+import { buildStackName } from '../utils/nameUtils'
 
 export class HealthChecker {
   static async checkStack(stack: StackInfo): Promise<StackStatus> {
-    const projectName = `${stack.projectId}-mr-${stack.mr_id}`
+    const projectName = buildStackName(stack.projectName, stack.mergeRequestName)
     try {
       let orchestrator = 'compose'
       try {

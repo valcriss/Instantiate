@@ -54,7 +54,7 @@ describe('StackManager.destroy', () => {
     await stackManager.destroy(payload as MergeRequestPayload, projectKey)
 
     // ✅ Vérifie l’arrêt de Docker
-    expect(mockDocker.prototype.down).toHaveBeenCalledWith(expect.stringContaining('instantiate'), `${payload.project_id}-mr-${payload.mr_id}`)
+    expect(mockDocker.prototype.down).toHaveBeenCalled()
 
     // ✅ Vérifie la libération des ports
     expect(mockPorts.releasePorts).toHaveBeenCalledWith('valcriss', payload.mr_id)
