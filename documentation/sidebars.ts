@@ -41,6 +41,11 @@ const sidebars: SidebarsConfig = {
         'configuration/template-variables'
       ],
     },
+    {
+      type: 'category',
+      label: 'Examples',
+      items: ['examples/front-and-back'],
+    },
   ],
 };
 
