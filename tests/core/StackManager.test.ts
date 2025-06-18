@@ -266,6 +266,142 @@ describe('StackManager.deploy', () => {
     expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'])
   })
 
+  it('injects credentials when provider is gitlab', async () => {
+    process.env.REPOSITORY_GITLAB_USERNAME = 'gluser'
+    process.env.REPOSITORY_GITLAB_TOKEN = 'glsecret'
+    const gitlabPayload: MergeRequestPayload = {
+      ...payload,
+      provider: 'gitlab',
+      repo: 'https://gitlab.com/test/repo.git'
+    }
+
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.readFile.mockResolvedValue('yaml')
+    mockYaml.parse.mockReturnValue({})
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(gitlabPayload, projectKey)
+
+    expect(fakeGit.clone).toHaveBeenCalledWith('https://gluser:glsecret@gitlab.com/test/repo.git', expect.any(String), ['--branch', gitlabPayload.branch])
+
+    delete process.env.REPOSITORY_GITLAB_USERNAME
+    delete process.env.REPOSITORY_GITLAB_TOKEN
+  })
+
+  it('clones side repo without branch using default', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn() }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.readFile.mockResolvedValue('yaml')
+    mockYaml.parse.mockReturnValue({
+      services: {
+        backend: { repository: { repo: 'git@github.com:org/backend.git' } }
+      }
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(payload, projectKey)
+
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [])
+  })
+
+  it('clones side repo for gitlab provider with injected credentials', async () => {
+    process.env.REPOSITORY_GITLAB_USERNAME = 'gluser'
+    process.env.REPOSITORY_GITLAB_TOKEN = 'glsecret'
+    const gitlabPayload: MergeRequestPayload = {
+      ...payload,
+      provider: 'gitlab',
+      repo: 'https://gitlab.com/test/repo.git'
+    }
+
+    const fakeGit = {
+      clone: jest.fn().mockResolvedValue(undefined),
+      listRemote: jest.fn()
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.readFile.mockResolvedValue('yaml')
+    mockYaml.parse.mockReturnValue({
+      services: {
+        backend: { repository: { repo: 'git@gitlab.com:org/backend.git' } }
+      }
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(gitlabPayload, projectKey)
+
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@gitlab.com:org/backend.git', expect.stringContaining('/backend'), [])
+
+    delete process.env.REPOSITORY_GITLAB_USERNAME
+    delete process.env.REPOSITORY_GITLAB_TOKEN
+  })
+
+  it('allocates multiple ports when service ports > 1', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.readFile.mockResolvedValue('yaml')
+    mockYaml.parse.mockReturnValue({ services: { web: { ports: 2 } } })
+
+    mockPorts.allocatePort.mockResolvedValueOnce(10001).mockResolvedValueOnce(10002)
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(payload, projectKey)
+
+    expect(mockPorts.allocatePort).toHaveBeenNthCalledWith(1, payload.project_id, payload.mr_id, 'web', 'WEB_PORT_1')
+    expect(mockPorts.allocatePort).toHaveBeenNthCalledWith(2, payload.project_id, payload.mr_id, 'web', 'WEB_PORT_2')
+  })
+
+  it('handles listRemote errors gracefully', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn().mockRejectedValue(new Error('fail')) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.readFile.mockResolvedValue('yaml')
+    mockYaml.parse.mockReturnValue({
+      services: {
+        backend: { repository: { repo: 'git@github.com:org/backend.git', behavior: 'match' } }
+      }
+    })
+
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+    const logSpy = jest.spyOn(logger, 'debug').mockImplementation(() => {})
+
+    await stackManager.deploy(payload, projectKey)
+
+    expect(fakeGit.listRemote).toHaveBeenCalled()
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [])
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Side repo listRemote failed'))
+    logSpy.mockRestore()
+  })
+
   it("utilise simpleGit avec l'option sslVerify=false quand IGNORE_SSL_ERRORS est a true", async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
     process.env.IGNORE_SSL_ERRORS = 'true'
