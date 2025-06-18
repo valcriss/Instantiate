@@ -10,6 +10,12 @@ type GitLabComment = {
 }
 
 export class GitLabCommenter {
+  /**
+   * Generate headers for requests to the GitLab API.
+   *
+   * @returns An object with the HTTP headers or `null` when the token is not
+   *   configured.
+   */
   getHeaders() {
     let gitlabToken = process.env.REPOSITORY_GITLAB_TOKEN
     if (!gitlabToken) return null
@@ -21,6 +27,14 @@ export class GitLabCommenter {
     }
   }
 
+  /**
+   * Optionally create an HTTPS agent that ignores TLS validation when the
+   * environment requires it.
+   *
+   * @param url The request URL that will use the agent.
+   * @returns A custom agent or `undefined` when SSL errors should not be
+   *   ignored.
+   */
   getAgent(url: string) {
     if (process.env.IGNORE_SSL_ERRORS === 'true') {
       const protocol = new URL(url).protocol
@@ -31,6 +45,14 @@ export class GitLabCommenter {
     return undefined
   }
 
+  /**
+   * Fetch the list of notes (comments) for a given merge request.
+   *
+   * @param projectUrl URL of the GitLab project.
+   * @param projectId Identifier of the GitLab project.
+   * @param mrIid IID of the merge request.
+   * @returns A list of comments associated with the merge request.
+   */
   async getComments(projectUrl: string, projectId: string, mrIid: string): Promise<GitLabComment[]> {
     const headers = this.getHeaders()
     if (!headers) {
@@ -59,6 +81,15 @@ export class GitLabCommenter {
     return result
   }
 
+  /**
+   * Delete a specific note from a merge request.
+   *
+   * @param projectUrl URL of the GitLab project.
+   * @param projectId Identifier of the GitLab project.
+   * @param mrIid IID of the merge request.
+   * @param commentId Identifier of the comment to remove.
+   * @returns A promise that resolves once the comment has been deleted.
+   */
   async deleteComment(projectUrl: string, projectId: string, mrIid: string, commentId: string) {
     const headers = this.getHeaders()
     if (!headers) {
@@ -74,6 +105,12 @@ export class GitLabCommenter {
     })
   }
 
+  /**
+   * Remove previous status comments added by Instantiate on the merge request.
+   *
+   * @param payload Merge request payload from the webhook.
+   * @returns A promise that resolves when old comments have been removed.
+   */
   async removePreviousStatusComment(payload: MergeRequestPayload) {
     const url = payload.repo
     const projectId = payload.project_id
@@ -87,6 +124,15 @@ export class GitLabCommenter {
     }
   }
 
+  /**
+   * Post or update the status comment on the merge request.
+   *
+   * @param payload Merge request payload for which to comment.
+   * @param status Deployment status of the merge request.
+   * @param links Optional map of service names to URLs.
+   * @returns A promise that resolves when the comment has been created or
+   *   updated.
+   */
   async postStatusComment(payload: MergeRequestPayload, status: 'in_progress' | 'ready' | 'closed', links?: Record<string, string>) {
     const headers = this.getHeaders()
     if (!headers) {
@@ -126,6 +172,12 @@ export class GitLabCommenter {
     }
   }
 
+  /**
+   * Derive the GitLab API base URL from the repository URL.
+   *
+   * @param projectUrl The project repository URL.
+   * @returns The base API URL for the GitLab instance.
+   */
   getGitLabApiUrlFromProjectUrl(projectUrl: string): string {
     try {
       const url = new URL(projectUrl)

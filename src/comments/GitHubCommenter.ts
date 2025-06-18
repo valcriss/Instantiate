@@ -13,6 +13,12 @@ type GithubComment = {
 }
 
 export class GitHubCommenter {
+  /**
+   * Build the headers required to call the GitHub API.
+   *
+   * @returns An object containing the HTTP headers or `null` if no token is
+   *   configured.
+   */
   private getHeaders() {
     let githubToken = process.env.REPOSITORY_GITHUB_TOKEN
     if (!githubToken) return null
@@ -25,6 +31,13 @@ export class GitHubCommenter {
     }
   }
 
+  /**
+   * Retrieve all comments on a pull request.
+   *
+   * @param repo The full "owner/repository" path.
+   * @param prNumber The pull request number.
+   * @returns A list of comments found on the pull request.
+   */
   private async getComments(repo: string, prNumber: string): Promise<GithubComment[]> {
     const headers = this.getHeaders()
     if (!headers) {
@@ -37,6 +50,13 @@ export class GitHubCommenter {
     return (await response.json()) as GithubComment[]
   }
 
+  /**
+   * Delete a specific comment from a pull request.
+   *
+   * @param repo The full "owner/repository" path.
+   * @param commentId Identifier of the comment to delete.
+   * @returns A promise that resolves once the comment is removed.
+   */
   private async deleteComment(repo: string, commentId: number) {
     const headers = this.getHeaders()
     if (!headers) {
@@ -47,6 +67,14 @@ export class GitHubCommenter {
     await fetch(`https://api.github.com/repos/${owner}/${repository}/issues/comments/${commentId}`, { method: 'DELETE', headers: headers })
   }
 
+  /**
+   * Remove the previous status comment left by Instantiate on the pull request
+   * if it exists.
+   *
+   * @param payload Merge request payload received from the webhook.
+   * @returns A promise that resolves when the previous comment is deleted or
+   *   when none was found.
+   */
   async removePreviousStatusComment(payload: MergeRequestPayload) {
     const repo = payload.full_name
     const prNumber = payload.mr_iid
@@ -60,6 +88,16 @@ export class GitHubCommenter {
     }
   }
 
+  /**
+   * Post or update the status comment on the pull request with deployment
+   * information.
+   *
+   * @param payload Merge request payload associated with the pull request.
+   * @param status Current deployment status.
+   * @param links Optional map of service names to URLs.
+   * @returns A promise that resolves when the comment has been created or
+   *   updated.
+   */
   async postStatusComment(payload: MergeRequestPayload, status: 'in_progress' | 'ready' | 'closed', links?: Record<string, string>) {
     const headers = this.getHeaders()
     if (!headers) {
@@ -93,6 +131,12 @@ export class GitHubCommenter {
     }
   }
 
+  /**
+   * Extract the GitHub owner from the `owner/repository` notation.
+   *
+   * @param projectUrl Project path in the form `owner/repository`.
+   * @returns The repository owner.
+   */
   getGitHubOwnerFromProjectUrl(projectUrl: string): string {
     const pathParts = projectUrl.split('/')
     if (pathParts.length !== 2) {
@@ -101,6 +145,12 @@ export class GitHubCommenter {
     return `${pathParts[0]}`
   }
 
+  /**
+   * Extract the repository name from the `owner/repository` notation.
+   *
+   * @param projectUrl Project path in the form `owner/repository`.
+   * @returns The repository name.
+   */
   getGitHubRepositoryFromProjectUrl(projectUrl: string): string {
     const pathParts = projectUrl.split('/')
     if (pathParts.length !== 2) {
