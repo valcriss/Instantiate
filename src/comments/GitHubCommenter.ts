@@ -3,6 +3,7 @@ import logger from '../utils/logger'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import { COMMENT_SIGNATURE, generateComment } from './CommentService'
 import db from '../db'
+import { BaseCommenter } from './BaseCommenter'
 
 type GithubComment = {
   id: number
@@ -12,23 +13,15 @@ type GithubComment = {
   updated_at: string
 }
 
-export class GitHubCommenter {
-  /**
-   * Build the headers required to call the GitHub API.
-   *
-   * @returns An object containing the HTTP headers or `null` if no token is
-   *   configured.
-   */
-  private getHeaders() {
-    let githubToken = process.env.REPOSITORY_GITHUB_TOKEN
-    if (!githubToken) return null
-    return {
-      Authorization: `Bearer ${githubToken}`,
+export class GitHubCommenter extends BaseCommenter {
+  constructor() {
+    super('REPOSITORY_GITHUB_TOKEN', {
+      Authorization: 'Bearer {token}',
       Accept: 'application/vnd.github+json',
       'Content-Type': 'application/json',
       'X-GitHub-Api-Version': '2022-11-28',
       'User-Agent': 'InstantiateBot'
-    }
+    })
   }
 
   /**
@@ -39,15 +32,11 @@ export class GitHubCommenter {
    * @returns A list of comments found on the pull request.
    */
   private async getComments(repo: string, prNumber: string): Promise<GithubComment[]> {
-    const headers = this.getHeaders()
-    if (!headers) {
-      return []
-    }
     const owner = this.getGitHubOwnerFromProjectUrl(repo)
     const repository = this.getGitHubRepositoryFromProjectUrl(repo)
-    const response = await fetch(`https://api.github.com/repos/${owner}/${repository}/issues/${prNumber}/comments`, { headers: headers })
-
-    return (await response.json()) as GithubComment[]
+    const url = `https://api.github.com/repos/${owner}/${repository}/issues/${prNumber}/comments`
+    const { data } = await this.fetchCommentsFromUrl(url)
+    return data as GithubComment[]
   }
 
   /**
@@ -58,13 +47,10 @@ export class GitHubCommenter {
    * @returns A promise that resolves once the comment is removed.
    */
   private async deleteComment(repo: string, commentId: number) {
-    const headers = this.getHeaders()
-    if (!headers) {
-      return
-    }
     const owner = this.getGitHubOwnerFromProjectUrl(repo)
     const repository = this.getGitHubRepositoryFromProjectUrl(repo)
-    await fetch(`https://api.github.com/repos/${owner}/${repository}/issues/comments/${commentId}`, { method: 'DELETE', headers: headers })
+    const url = `https://api.github.com/repos/${owner}/${repository}/issues/comments/${commentId}`
+    await this.deleteCommentFromUrl(url)
   }
 
   /**
