@@ -9,6 +9,7 @@ import logger from '../utils/logger'
 import { TemplateEngine } from './TemplateEngine'
 import { validateStackFile } from '../utils/stackValidator'
 import { getOrchestratorAdapter } from '../orchestrators'
+import { buildStackName } from '../utils/nameUtils'
 import { PortAllocator } from './PortAllocator'
 import { CommentService } from '../comments/CommentService'
 import { StackService } from './StackService'
@@ -129,7 +130,8 @@ export class StackManager {
         // ignore if missing
       }
       const adapter = getOrchestratorAdapter(orchestrator)
-      await adapter.down(tmpPath, `${projectId}-mr-${mrId}`)
+      const stackName = buildStackName(payload.projectName, payload.mergeRequestName)
+      await adapter.down(tmpPath, stackName)
       await PortAllocator.releasePorts(projectId, mrId)
 
       await db.updateMergeRequest(payload, 'closed')
@@ -265,7 +267,9 @@ export class StackManager {
     await validateStackFile(composeInput)
     await TemplateEngine.renderToFile(composeInput, composeOutput, context)
 
-    await adapter.up(tmpPath, `${payload.project_id}-mr-${payload.mr_id}`)
+    const stackName = buildStackName(payload.projectName, payload.mergeRequestName)
+
+    await adapter.up(tmpPath, stackName)
     await commenter.postStatusComment(payload, 'ready', portsLinks)
     logger.info(`[stack] Stack for the MR #${payload.mr_id} on project ${payload.project_id} successfully deployed`)
 
