@@ -3,28 +3,28 @@ import logger from '../utils/logger'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import { COMMENT_SIGNATURE, generateComment } from './CommentService'
 import db from '../db'
+import { BaseCommenter } from './BaseCommenter'
 
 type GitLabComment = {
   id: string
   body: string
 }
 
-export class GitLabCommenter {
-  /**
-   * Generate headers for requests to the GitLab API.
-   *
-   * @returns An object with the HTTP headers or `null` when the token is not
-   *   configured.
-   */
-  getHeaders() {
-    let gitlabToken = process.env.REPOSITORY_GITLAB_TOKEN
-    if (!gitlabToken) return null
-    return {
-      'PRIVATE-TOKEN': `${gitlabToken}`,
+export class GitLabCommenter extends BaseCommenter {
+  constructor() {
+    super('REPOSITORY_GITLAB_TOKEN', {
+      'PRIVATE-TOKEN': '{token}',
       Accept: 'application/json',
       'User-Agent': 'InstantiateBot',
       'Content-Type': 'application/json'
-    }
+    })
+  }
+
+  /**
+   * Expose the headers generator for testing purposes.
+   */
+  public getHeaders() {
+    return super.getHeaders()
   }
 
   /**
@@ -54,31 +54,24 @@ export class GitLabCommenter {
    * @returns A list of comments associated with the merge request.
    */
   async getComments(projectUrl: string, projectId: string, mrIid: string): Promise<GitLabComment[]> {
-    const headers = this.getHeaders()
-    if (!headers) {
-      return []
-    }
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(projectUrl)
     const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes`
     logger.debug(url)
     const agent = this.getAgent(url)
-    const response = await fetch(url, { headers: headers, agent })
-    if (response.status === 403) {
+    const { data, status, jsonAvailable } = await this.fetchCommentsFromUrl(url, agent)
+    if (status === 403) {
       logger.warn(`[gitlab-comment] GitLab token not valid, unable to read comments`)
       return []
     }
-
-    if (typeof response.json !== 'function') {
+    if (!jsonAvailable) {
       logger.warn(`[gitlab-comment] Unexpected response format, unable to parse comments`)
       return []
     }
-    logger.debug(response)
-    const result = (await response.json()) as GitLabComment[]
-    if (typeof result.filter !== 'function') {
+    if (!Array.isArray(data)) {
       logger.warn(`[gitlab-comment] Unexpected response format, unable to filter comments`)
       return []
     }
-    return result
+    return data as GitLabComment[]
   }
 
   /**
@@ -91,18 +84,10 @@ export class GitLabCommenter {
    * @returns A promise that resolves once the comment has been deleted.
    */
   async deleteComment(projectUrl: string, projectId: string, mrIid: string, commentId: string) {
-    const headers = this.getHeaders()
-    if (!headers) {
-      return
-    }
     const apiUrl = this.getGitLabApiUrlFromProjectUrl(projectUrl)
     const url = `${apiUrl}/projects/${projectId}/merge_requests/${mrIid}/notes/${commentId}`
     const agent = this.getAgent(url)
-    await fetch(url, {
-      method: 'DELETE',
-      headers: headers,
-      agent
-    })
+    await this.deleteCommentFromUrl(url, agent)
   }
 
   /**
