@@ -13,8 +13,15 @@ stackfile: docker-compose.yml
 
 services:
   web:
+    prebuild:
+      image: node:23
+      commands:
+        - npm install
+        - npm run build
     ports: 1
 ```
+
+Use the optional `prebuild` object to run commands before Docker builds the image. Commands execute inside a temporary container defined by `image`. The service code is mounted in `/app` by default and can be changed using `mountpath`.
 
 ```yaml
 # .instantiate/docker-compose.yml
