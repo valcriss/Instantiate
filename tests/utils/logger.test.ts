@@ -6,14 +6,19 @@ jest.resetModules()
 describe('logger (utils/logger.ts)', () => {
   let mockPino: jest.Mock
   let infoSpy: jest.Mock, errorSpy: jest.Mock
+  let flushSpy: jest.Mock, removeListenersSpy: jest.Mock
 
   beforeEach(() => {
     infoSpy = jest.fn()
     errorSpy = jest.fn()
+    flushSpy = jest.fn()
+    removeListenersSpy = jest.fn()
 
     mockPino = jest.fn(() => ({
       info: infoSpy,
-      error: errorSpy
+      error: errorSpy,
+      flush: flushSpy,
+      removeAllListeners: removeListenersSpy
     }))
 
     jest.mock('pino', () => mockPino)
@@ -41,5 +46,20 @@ describe('logger (utils/logger.ts)', () => {
 
     logger.info('test log')
     expect(infoSpy).toHaveBeenCalledWith('test log')
+  })
+
+  it('flushes and removes listeners when closeLogger is called', () => {
+    process.env.NODE_ENV = 'development'
+    const { closeLogger } = require('../../src/utils/logger')
+    closeLogger()
+    expect(flushSpy).toHaveBeenCalled()
+    expect(removeListenersSpy).toHaveBeenCalled()
+  })
+
+  it('handles logger without flush method', () => {
+    jest.resetModules()
+    mockPino.mockReturnValue({ info: infoSpy, error: errorSpy })
+    const { closeLogger } = require('../../src/utils/logger')
+    expect(() => closeLogger()).not.toThrow()
   })
 })
