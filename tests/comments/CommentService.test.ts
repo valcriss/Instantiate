@@ -42,7 +42,7 @@ describe('CommentService', () => {
     })
 
     it("lève une erreur si le provider n'est pas supporté", () => {
-      expect(() => CommentService.getCommenter('unsupported')).toThrowError('Unsupported provider: unsupported')
+      expect(() => CommentService.getCommenter('unsupported')).toThrow('Unsupported provider: unsupported')
     })
   })
 })
