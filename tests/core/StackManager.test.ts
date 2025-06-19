@@ -174,12 +174,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(urlPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith(
-      'https://user:secret@github.com/test/repo.git',
-      expect.any(String),
-      ['--branch', urlPayload.branch],
-      expect.any(Function)
-    )
+    expect(fakeGit.clone).toHaveBeenCalledWith('https://user:secret@github.com/test/repo.git', expect.any(String), ['--branch', urlPayload.branch])
 
     commentSpy.mockRestore()
     delete process.env.REPOSITORY_GITHUB_USERNAME
@@ -207,12 +202,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(urlPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith(
-      'https://user:secret@github.com/test/repo.git',
-      expect.any(String),
-      ['--branch', urlPayload.branch],
-      expect.any(Function)
-    )
+    expect(fakeGit.clone).toHaveBeenCalledWith('https://user:secret@github.com/test/repo.git', expect.any(String), ['--branch', urlPayload.branch])
 
     commentSpy.mockRestore()
     delete process.env.REPOSITORY_GITHUB_USERNAME
@@ -239,13 +229,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(payload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(
-      2,
-      'git@github.com:org/backend.git',
-      expect.stringContaining('/backend'),
-      ['--branch', 'develop'],
-      expect.any(Function)
-    )
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'])
     expect(mockTemplateEngine.renderToFile).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
@@ -274,13 +258,7 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(
-      2,
-      'git@github.com:org/backend.git',
-      expect.stringContaining('/backend'),
-      ['--branch', payload.branch],
-      expect.any(Function)
-    )
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', payload.branch])
   })
 
   it('falls back to defined branch when match branch is missing', async () => {
@@ -304,13 +282,7 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(
-      2,
-      'git@github.com:org/backend.git',
-      expect.stringContaining('/backend'),
-      ['--branch', 'develop'],
-      expect.any(Function)
-    )
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'])
   })
 
   it('injects credentials when provider is gitlab', async () => {
@@ -335,12 +307,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(gitlabPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith(
-      'https://gluser:glsecret@gitlab.com/test/repo.git',
-      expect.any(String),
-      ['--branch', gitlabPayload.branch],
-      expect.any(Function)
-    )
+    expect(fakeGit.clone).toHaveBeenCalledWith('https://gluser:glsecret@gitlab.com/test/repo.git', expect.any(String), ['--branch', gitlabPayload.branch])
 
     delete process.env.REPOSITORY_GITLAB_USERNAME
     delete process.env.REPOSITORY_GITLAB_TOKEN
@@ -366,7 +333,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(payload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [], expect.any(Function))
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [])
   })
 
   it('clones side repo for gitlab provider with injected credentials', async () => {
@@ -396,7 +363,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(gitlabPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@gitlab.com:org/backend.git', expect.stringContaining('/backend'), [], expect.any(Function))
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@gitlab.com:org/backend.git', expect.stringContaining('/backend'), [])
 
     delete process.env.REPOSITORY_GITLAB_USERNAME
     delete process.env.REPOSITORY_GITLAB_TOKEN
@@ -526,7 +493,7 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [], expect.any(Function))
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [])
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Side repo listRemote failed'))
     logSpy.mockRestore()
   })
