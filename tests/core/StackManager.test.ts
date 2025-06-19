@@ -35,6 +35,25 @@ const mockDb = db as jest.Mocked<typeof db>
 const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
 const mockedExeca = execa as jest.MockedFunction<typeof execa>
 
+function createFakeGit(options?: {
+  listRemote?: jest.Mock
+  cloneError?: Error
+}) {
+  return {
+    clone: jest.fn((...args: unknown[]) => {
+      const callback = args[args.length - 1]
+      if (typeof callback === 'function') {
+        callback(options?.cloneError ?? null)
+      }
+      // The real simple-git clone returns a promise but also accepts a
+      // callback. We simulate this behavior without rejecting the returned
+      // promise to avoid unhandled rejections in tests.
+      return Promise.resolve(undefined)
+    }),
+    ...(options?.listRemote ? { listRemote: options.listRemote } : {})
+  }
+}
+
 describe('StackManager.deploy', () => {
   const stackManager = new StackManager()
 
@@ -69,7 +88,7 @@ describe('StackManager.deploy', () => {
   it('orchestre le déploiement complet d’une MR', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
     // Mock clone
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -145,7 +164,7 @@ describe('StackManager.deploy', () => {
       repo: 'https://github.com/test/repo.git'
     }
 
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
     const commentSpy = jest.spyOn(GitHubCommenter.prototype, 'postStatusComment').mockResolvedValue()
@@ -158,7 +177,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(urlPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith('https://user:secret@github.com/test/repo.git', expect.any(String), ['--branch', urlPayload.branch])
+    expect(fakeGit.clone).toHaveBeenCalledWith('https://user:secret@github.com/test/repo.git', expect.any(String), ['--branch', urlPayload.branch], expect.any(Function))
 
     commentSpy.mockRestore()
     delete process.env.REPOSITORY_GITHUB_USERNAME
@@ -173,7 +192,7 @@ describe('StackManager.deploy', () => {
       repo: 'https://user:secret@github.com/test/repo.git'
     }
 
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
     const commentSpy = jest.spyOn(GitHubCommenter.prototype, 'postStatusComment').mockResolvedValue()
@@ -186,7 +205,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(urlPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith('https://user:secret@github.com/test/repo.git', expect.any(String), ['--branch', urlPayload.branch])
+    expect(fakeGit.clone).toHaveBeenCalledWith('https://user:secret@github.com/test/repo.git', expect.any(String), ['--branch', urlPayload.branch], expect.any(Function))
 
     commentSpy.mockRestore()
     delete process.env.REPOSITORY_GITHUB_USERNAME
@@ -195,7 +214,7 @@ describe('StackManager.deploy', () => {
 
   it('clones repositories from config and injects their paths', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn() }
+    const fakeGit = createFakeGit({ listRemote: jest.fn() })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -213,7 +232,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(payload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'], expect.any(Function))
     expect(mockTemplateEngine.renderToFile).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
@@ -223,7 +242,7 @@ describe('StackManager.deploy', () => {
 
   it('uses match behavior when branch exists', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn().mockResolvedValue('something') }
+    const fakeGit = createFakeGit({ listRemote: jest.fn().mockResolvedValue('something') })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -242,12 +261,12 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', payload.branch])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', payload.branch], expect.any(Function))
   })
 
   it('falls back to defined branch when match branch is missing', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn().mockResolvedValue('') }
+    const fakeGit = createFakeGit({ listRemote: jest.fn().mockResolvedValue('') })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -266,7 +285,7 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'], expect.any(Function))
   })
 
   it('injects credentials when provider is gitlab', async () => {
@@ -278,7 +297,7 @@ describe('StackManager.deploy', () => {
       repo: 'https://gitlab.com/test/repo.git'
     }
 
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -291,7 +310,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(gitlabPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith('https://gluser:glsecret@gitlab.com/test/repo.git', expect.any(String), ['--branch', gitlabPayload.branch])
+    expect(fakeGit.clone).toHaveBeenCalledWith('https://gluser:glsecret@gitlab.com/test/repo.git', expect.any(String), ['--branch', gitlabPayload.branch], expect.any(Function))
 
     delete process.env.REPOSITORY_GITLAB_USERNAME
     delete process.env.REPOSITORY_GITLAB_TOKEN
@@ -299,7 +318,7 @@ describe('StackManager.deploy', () => {
 
   it('clones side repo without branch using default', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn() }
+    const fakeGit = createFakeGit({ listRemote: jest.fn() })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -317,7 +336,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(payload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [], expect.any(Function))
   })
 
   it('clones side repo for gitlab provider with injected credentials', async () => {
@@ -329,10 +348,7 @@ describe('StackManager.deploy', () => {
       repo: 'https://gitlab.com/test/repo.git'
     }
 
-    const fakeGit = {
-      clone: jest.fn().mockResolvedValue(undefined),
-      listRemote: jest.fn()
-    }
+    const fakeGit = createFakeGit({ listRemote: jest.fn() })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -350,7 +366,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(gitlabPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@gitlab.com:org/backend.git', expect.stringContaining('/backend'), [])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@gitlab.com:org/backend.git', expect.stringContaining('/backend'), [], expect.any(Function))
 
     delete process.env.REPOSITORY_GITLAB_USERNAME
     delete process.env.REPOSITORY_GITLAB_TOKEN
@@ -358,7 +374,7 @@ describe('StackManager.deploy', () => {
 
   it('allocates multiple ports when service ports > 1', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -380,7 +396,7 @@ describe('StackManager.deploy', () => {
 
   it('runs prebuild commands for local service', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -411,7 +427,7 @@ describe('StackManager.deploy', () => {
 
   it('runs prebuild commands in repository directory', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn() }
+    const fakeGit = createFakeGit({ listRemote: jest.fn() })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -460,7 +476,7 @@ describe('StackManager.deploy', () => {
 
   it('handles listRemote errors gracefully', async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn().mockRejectedValue(new Error('fail')) }
+    const fakeGit = createFakeGit({ listRemote: jest.fn().mockRejectedValue(new Error('fail')) })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -480,7 +496,7 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [], expect.any(Function))
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Side repo listRemote failed'))
     logSpy.mockRestore()
   })
@@ -488,7 +504,7 @@ describe('StackManager.deploy', () => {
   it("utilise simpleGit avec l'option sslVerify=false quand IGNORE_SSL_ERRORS est a true", async () => {
     delete process.env.REPOSITORY_GITHUB_TOKEN
     process.env.IGNORE_SSL_ERRORS = 'true'
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
     mockFs.stat.mockResolvedValue({} as Stats)
@@ -507,7 +523,7 @@ describe('StackManager.deploy', () => {
     const stackManager = new StackManager()
     delete process.env.REPOSITORY_GITHUB_TOKEN
     // Mock tout comme avant
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -551,7 +567,7 @@ describe('StackManager.deploy', () => {
     const stackManager = new StackManager()
     delete process.env.REPOSITORY_GITHUB_TOKEN
     // Mock tout comme avant
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -593,7 +609,7 @@ describe('StackManager.deploy', () => {
     const stackManager = new StackManager()
     delete process.env.REPOSITORY_GITHUB_TOKEN
     // Mock tout comme avant
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
 
@@ -634,7 +650,7 @@ describe('StackManager.deploy', () => {
   it('log une erreur et retourne si le dossier temporaire ne peut pas être créé', async () => {
     const stackManager = new StackManager()
     delete process.env.REPOSITORY_GITHUB_TOKEN
-    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
     jest.spyOn(ioUtils, 'createDirectory').mockResolvedValueOnce(false)
@@ -649,6 +665,7 @@ describe('StackManager.deploy', () => {
     expect(fakeGit.clone).not.toHaveBeenCalled()
     loggerSpy.mockRestore()
   })
+
 })
 
 describe('StackManager environment variables', () => {
