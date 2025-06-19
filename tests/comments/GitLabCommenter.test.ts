@@ -61,7 +61,7 @@ describe('GitLabCommenter', () => {
     it('throws an error for an invalid project URL', () => {
       expect(() => {
         commenter.getGitLabApiUrlFromProjectUrl('invalid-url')
-      }).toThrowError('Invalid GitLab project URL: invalid-url')
+      }).toThrow('Invalid GitLab project URL: invalid-url')
     })
   })
 
@@ -142,6 +142,12 @@ describe('GitLabCommenter', () => {
       process.env.IGNORE_SSL_ERRORS = 'true'
       const agent = commenter.getAgent('https://gitlab.example.com')
       expect(agent).toBeInstanceOf(require('https').Agent)
+    })
+
+    it('returns undefined for http even when ignoring ssl errors', () => {
+      process.env.IGNORE_SSL_ERRORS = 'true'
+      const agent = commenter.getAgent('http://gitlab.example.com')
+      expect(agent).toBeUndefined()
     })
 
     it('returns undefined when http or flag not set', () => {

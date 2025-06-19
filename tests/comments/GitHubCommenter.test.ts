@@ -183,7 +183,7 @@ describe('GitHubCommenter', () => {
     it('throws an error if the project URL is invalid', () => {
       expect(() => {
         commenter.getGitHubOwnerFromProjectUrl('invalid-url')
-      }).toThrowError('Invalid GitHub project URL: invalid-url')
+      }).toThrow('Invalid GitHub project URL: invalid-url')
     })
   })
 
@@ -191,7 +191,7 @@ describe('GitHubCommenter', () => {
     it('throws an error if the project URL is invalid', () => {
       expect(() => {
         commenter.getGitHubRepositoryFromProjectUrl('invalid-url')
-      }).toThrowError('Invalid GitHub project URL: invalid-url')
+      }).toThrow('Invalid GitHub project URL: invalid-url')
     })
   })
 })

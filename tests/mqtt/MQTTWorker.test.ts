@@ -64,6 +64,13 @@ describe('MQTTWorker', () => {
     expect(logger.error).toHaveBeenCalledWith(err)
   })
 
+  it('ignores message when status is unknown', async () => {
+    const payload = { status: 'unknown' }
+    await messageCallback('instantiate/update', Buffer.from(JSON.stringify({ payload, projectKey: 'key' })))
+    expect(mockDeploy).not.toHaveBeenCalled()
+    expect(mockDestroy).not.toHaveBeenCalled()
+  })
+
   it('subscribes to updates on connect', () => {
     const connectCallback = mockClient.on.mock.calls.find((c: unknown[]) => c[0] === 'connect')[1]
     connectCallback()
@@ -78,5 +85,10 @@ describe('MQTTWorker', () => {
     const { ensureMQTTWorkerIsInitialized: ensureInit } = require('../../src/mqtt/MQTTWorker')
     ensureInit()
     expect(mqttMock.connect).toHaveBeenCalled()
+  })
+
+  it('does not initialize again if client already exists', () => {
+    ensureMQTTWorkerIsInitialized()
+    expect(mqtt.connect).toHaveBeenCalledTimes(1)
   })
 })
