@@ -68,16 +68,7 @@ export class StackManager {
       }
 
       const git = simpleGit({ config: process.env.IGNORE_SSL_ERRORS === 'true' ? ['http.sslVerify=false'] : [] })
-      await new Promise<void>((resolve, reject) => {
-        git.clone(cloneUrl, tmpPath, ['--branch', payload.branch], (err) => {
-          /* istanbul ignore next */
-          if (err) {
-            reject(err)
-            return
-          }
-          resolve()
-        })
-      })
+      await git.clone(cloneUrl, tmpPath, ['--branch', payload.branch])
 
       const configData = await this.loadConfiguration(tmpPath, payload.branch)
       if (!configData) {
@@ -231,16 +222,7 @@ export class StackManager {
             }
           }
           const cloneArgs = branchToClone ? ['--branch', branchToClone] : []
-          await new Promise<void>((resolve, reject) => {
-            git.clone(sideRepoUrl, repoPath, cloneArgs, (err) => {
-              /* istanbul ignore next */
-              if (err) {
-                reject(err)
-                return
-              }
-              resolve()
-            })
-          })
+          await git.clone(sideRepoUrl, repoPath, cloneArgs)
           repoPaths[serviceName.toUpperCase() + '_PATH'] = repoPath
         }
       }
