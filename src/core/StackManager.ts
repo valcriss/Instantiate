@@ -251,7 +251,7 @@ export class StackManager {
       const mountPath = pre.mountpath ?? '/app'
       const hostPath = serviceCfg.repository ? repoPaths[serviceName.toUpperCase() + '_PATH'] : tmpPath
       logger.info(`[prebuild] ${serviceName}`)
-      logger.info(`[prebuild] Mounting host path: ${hostPath} to container path: ${mountPath}`)
+      logger.info(`[prebuild] executing commands: ${pre.commands.join(' && ')} on image ${pre.image}`)
       const subprocess = execa('docker', ['run', '--rm', '-v', `${hostPath}:${mountPath}`, '-w', mountPath, pre.image, 'sh', '-c', pre.commands.join(' && ')])
       subprocess.stdout?.on('data', (d) => {
         logger.info(`[prebuild:stdout] ${d.toString().trim()}`)
