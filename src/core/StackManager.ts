@@ -300,8 +300,8 @@ export class StackManager {
     const adapter = getOrchestratorAdapter(orchestrator)
     const composeOutput = path.join(tmpPath, 'docker-compose.yml')
 
-    await validateStackFile(composeInput)
     await TemplateEngine.renderToFile(composeInput, composeOutput, context)
+    await validateStackFile(composeOutput)
 
     const stackName = buildStackName(payload.projectName, payload.mergeRequestName)
 
