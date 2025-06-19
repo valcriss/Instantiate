@@ -35,10 +35,7 @@ const mockDb = db as jest.Mocked<typeof db>
 const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
 const mockedExeca = execa as jest.MockedFunction<typeof execa>
 
-function createFakeGit(options?: {
-  listRemote?: jest.Mock
-  cloneError?: Error
-}) {
+function createFakeGit(options?: { listRemote?: jest.Mock; cloneError?: Error }) {
   return {
     clone: jest.fn((...args: unknown[]) => {
       const callback = args[args.length - 1]
@@ -177,7 +174,12 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(urlPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith('https://user:secret@github.com/test/repo.git', expect.any(String), ['--branch', urlPayload.branch], expect.any(Function))
+    expect(fakeGit.clone).toHaveBeenCalledWith(
+      'https://user:secret@github.com/test/repo.git',
+      expect.any(String),
+      ['--branch', urlPayload.branch],
+      expect.any(Function)
+    )
 
     commentSpy.mockRestore()
     delete process.env.REPOSITORY_GITHUB_USERNAME
@@ -205,7 +207,12 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(urlPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith('https://user:secret@github.com/test/repo.git', expect.any(String), ['--branch', urlPayload.branch], expect.any(Function))
+    expect(fakeGit.clone).toHaveBeenCalledWith(
+      'https://user:secret@github.com/test/repo.git',
+      expect.any(String),
+      ['--branch', urlPayload.branch],
+      expect.any(Function)
+    )
 
     commentSpy.mockRestore()
     delete process.env.REPOSITORY_GITHUB_USERNAME
@@ -232,7 +239,13 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(payload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'], expect.any(Function))
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(
+      2,
+      'git@github.com:org/backend.git',
+      expect.stringContaining('/backend'),
+      ['--branch', 'develop'],
+      expect.any(Function)
+    )
     expect(mockTemplateEngine.renderToFile).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
@@ -261,7 +274,13 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', payload.branch], expect.any(Function))
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(
+      2,
+      'git@github.com:org/backend.git',
+      expect.stringContaining('/backend'),
+      ['--branch', payload.branch],
+      expect.any(Function)
+    )
   })
 
   it('falls back to defined branch when match branch is missing', async () => {
@@ -285,7 +304,13 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'], expect.any(Function))
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(
+      2,
+      'git@github.com:org/backend.git',
+      expect.stringContaining('/backend'),
+      ['--branch', 'develop'],
+      expect.any(Function)
+    )
   })
 
   it('injects credentials when provider is gitlab', async () => {
@@ -310,7 +335,12 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(gitlabPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith('https://gluser:glsecret@gitlab.com/test/repo.git', expect.any(String), ['--branch', gitlabPayload.branch], expect.any(Function))
+    expect(fakeGit.clone).toHaveBeenCalledWith(
+      'https://gluser:glsecret@gitlab.com/test/repo.git',
+      expect.any(String),
+      ['--branch', gitlabPayload.branch],
+      expect.any(Function)
+    )
 
     delete process.env.REPOSITORY_GITLAB_USERNAME
     delete process.env.REPOSITORY_GITLAB_TOKEN
@@ -665,7 +695,6 @@ describe('StackManager.deploy', () => {
     expect(fakeGit.clone).not.toHaveBeenCalled()
     loggerSpy.mockRestore()
   })
-
 })
 
 describe('StackManager environment variables', () => {
