@@ -14,8 +14,15 @@ stackfile: all.yml
 
 services:
   web:
+    prebuild:
+      image: node:23
+      commands:
+        - npm install
+        - npm run build
     ports: 1
 ```
+
+Use the optional `prebuild` object to run commands before Docker builds the image. Commands execute inside a temporary container defined by `image`. The code is mounted in `/app` unless overridden by `mountpath`.
 
 ```yaml
 # .instantiate/all.yml

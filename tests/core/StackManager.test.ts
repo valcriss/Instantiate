@@ -13,6 +13,7 @@ import logger, { closeLogger } from '../../src/utils/logger'
 import { closeConnection } from '../../src/mqtt/MQTTClient'
 import * as ioUtils from '../../src/utils/ioUtils'
 import { GitHubCommenter } from '../../src/comments/GitHubCommenter'
+import { execa, type ResultPromise } from 'execa'
 
 jest.mock('simple-git')
 jest.mock('fs/promises')
@@ -22,6 +23,7 @@ jest.mock('../../src/orchestrators/DockerComposeAdapter')
 jest.mock('../../src/orchestrators/KubernetesAdapter')
 jest.mock('../../src/db')
 jest.mock('../../src/core/PortAllocator')
+jest.mock('execa')
 
 const mockGit = simpleGit as jest.MockedFunction<typeof simpleGit>
 const mockFs = fs as jest.Mocked<typeof fs>
@@ -31,6 +33,7 @@ const mockDocker = DockerComposeAdapter as unknown as jest.MockedClass<typeof Do
 const mockK8s = KubernetesAdapter as unknown as jest.MockedClass<typeof KubernetesAdapter>
 const mockDb = db as jest.Mocked<typeof db>
 const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
+const mockedExeca = execa as jest.MockedFunction<typeof execa>
 
 describe('StackManager.deploy', () => {
   const stackManager = new StackManager()
@@ -373,6 +376,86 @@ describe('StackManager.deploy', () => {
 
     expect(mockPorts.allocatePort).toHaveBeenNthCalledWith(1, payload.project_id, payload.mr_id, 'web', 'WEB_PORT_1')
     expect(mockPorts.allocatePort).toHaveBeenNthCalledWith(2, payload.project_id, payload.mr_id, 'web', 'WEB_PORT_2')
+  })
+
+  it('runs prebuild commands for local service', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined) }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.readFile.mockResolvedValue('yaml')
+    mockYaml.parse.mockReturnValue({ services: { front: { prebuild: { image: 'node:23', commands: ['npm i'] } } } })
+
+    const EventEmitter = (await import('events')).EventEmitter
+    const stdout = new EventEmitter()
+    const stderr = new EventEmitter()
+    const promise = new Promise((resolve) => {
+      process.nextTick(() => {
+        stdout.emit('data', Buffer.from('out'))
+        stderr.emit('data', Buffer.from('err'))
+        resolve(undefined)
+      })
+    })
+    const child = Object.assign(promise, { stdout, stderr }) as unknown as ResultPromise
+    mockedExeca.mockReturnValueOnce(child)
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(payload, projectKey)
+
+    expect(mockedExeca).toHaveBeenCalledWith('docker', ['run', '--rm', '-v', expect.stringContaining(':/app'), '-w', '/app', 'node:23', 'sh', '-c', 'npm i'])
+  })
+
+  it('runs prebuild commands in repository directory', async () => {
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = { clone: jest.fn().mockResolvedValue(undefined), listRemote: jest.fn() }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+
+    mockFs.readFile.mockResolvedValue('yaml')
+    mockYaml.parse.mockReturnValue({
+      services: {
+        backend: {
+          repository: { repo: 'git@github.com:org/backend.git' },
+          prebuild: { image: 'node:23', mountpath: '/src', commands: ['npm i'] }
+        }
+      }
+    })
+
+    const EventEmitter = (await import('events')).EventEmitter
+    const stdout = new EventEmitter()
+    const stderr = new EventEmitter()
+    const promise = new Promise((resolve) => {
+      process.nextTick(() => {
+        stdout.emit('data', Buffer.from('out'))
+        stderr.emit('data', Buffer.from('err'))
+        resolve(undefined)
+      })
+    })
+    const child = Object.assign(promise, { stdout, stderr }) as unknown as ResultPromise
+    mockedExeca.mockReturnValueOnce(child)
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(payload, projectKey)
+
+    expect(mockedExeca).toHaveBeenCalledWith('docker', [
+      'run',
+      '--rm',
+      '-v',
+      expect.stringContaining('/backend:/src'),
+      '-w',
+      '/src',
+      'node:23',
+      'sh',
+      '-c',
+      'npm i'
+    ])
   })
 
   it('handles listRemote errors gracefully', async () => {

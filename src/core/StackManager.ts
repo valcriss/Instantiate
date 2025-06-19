@@ -15,6 +15,7 @@ import { CommentService } from '../comments/CommentService'
 import { StackService } from './StackService'
 import { createDirectory, removeDirectory } from '../utils/ioUtils'
 import { injectCredentialsIfMissing } from '../utils/gitUrl'
+import execa from '../docker/execaWrapper'
 
 /**
  * Coordinates the creation and removal of ephemeral stacks for merge requests.
@@ -78,6 +79,8 @@ export class StackManager {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const repoPaths = await this.cloneRepositories(git, payload, tmpPath, (configData.config as any).services)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await this.runPrebuild((configData.config as any).services, repoPaths, tmpPath)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { ports, portsLinks } = await this.allocateServicePorts((configData.config as any).services, projectId, mrId, hostDns)
 
@@ -225,6 +228,38 @@ export class StackManager {
       }
     }
     return repoPaths
+  }
+
+  private async runPrebuild(
+    services:
+      | Record<
+          string,
+          { repository?: { repo: string; branch?: string; behavior?: string }; prebuild?: { image: string; mountpath?: string; commands: string[] } }
+        >
+      | undefined,
+    repoPaths: Record<string, string>,
+    tmpPath: string
+  ): Promise<void> {
+    if (!services) {
+      return
+    }
+    for (const [serviceName, serviceCfg] of Object.entries(services)) {
+      const pre = serviceCfg.prebuild
+      if (!pre) {
+        continue
+      }
+      const mountPath = pre.mountpath ?? '/app'
+      const hostPath = serviceCfg.repository ? repoPaths[serviceName.toUpperCase() + '_PATH'] : tmpPath
+      logger.info(`[prebuild] ${serviceName}`)
+      const subprocess = execa('docker', ['run', '--rm', '-v', `${hostPath}:${mountPath}`, '-w', mountPath, pre.image, 'sh', '-c', pre.commands.join(' && ')])
+      subprocess.stdout?.on('data', (d) => {
+        logger.info(`[prebuild:stdout] ${d.toString().trim()}`)
+      })
+      subprocess.stderr?.on('data', (d) => {
+        logger.info(`[prebuild:stderr] ${d.toString().trim()}`)
+      })
+      await subprocess
+    }
   }
 
   private async allocateServicePorts(
