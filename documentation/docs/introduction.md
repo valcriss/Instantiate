@@ -10,6 +10,9 @@ It listens to your GitHub or GitLab events, renders the configuration templates 
 
 These environments run on dynamic ports and are destroyed once the merge request is closed, allowing reviewers to test features in isolation without any manual setup.
 
+![instantiate.png](../instantiate.png)
+
+
 ## Key Features
 
 - Works with Docker Compose, Swarm and Kubernetes
