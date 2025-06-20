@@ -38,7 +38,9 @@ const sidebars: SidebarsConfig = {
           ],
         },
         'configuration/environment-variables',
-        'configuration/template-variables'
+        'configuration/template-variables',
+        'configuration/prebuild-commands',
+        'configuration/service-from-git'
       ],
     },
     {
