@@ -27,6 +27,11 @@ describe('generateComment', () => {
     const result = generateComment('closed')
     expect(result).toBe(`${COMMENT_SIGNATURE}\n Stack destroyed due to merge request closure.`)
   })
+
+  it("génère un commentaire pour le statut 'error'", () => {
+    const result = generateComment('error')
+    expect(result).toBe(`${COMMENT_SIGNATURE}\n Deployment failed.`)
+  })
 })
 
 describe('CommentService', () => {

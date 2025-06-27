@@ -99,6 +99,8 @@ export class StackManager {
       return hostDns
     } catch (err) {
       logger.error(`[stack] Error during the deployment of the stack for MR #${mrId} on project ${projectId}`)
+      await commenter.postStatusComment(payload, 'error')
+      await StackService.updateStatus(projectId, mrId, 'error')
       throw err
     }
   }
