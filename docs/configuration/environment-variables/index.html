@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.8.1">
 <title data-rh="true">Environment Variables | Instantiate</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://valcriss.github.io/Instantiate/docs/configuration/environment-variables"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Environment Variables | Instantiate"><meta data-rh="true" name="description" content="Instantiate is configured through several environment variables. These values"><meta data-rh="true" property="og:description" content="Instantiate is configured through several environment variables. These values"><link data-rh="true" rel="icon" href="/Instantiate/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://valcriss.github.io/Instantiate/docs/configuration/environment-variables"><link data-rh="true" rel="alternate" href="https://valcriss.github.io/Instantiate/docs/configuration/environment-variables" hreflang="en"><link data-rh="true" rel="alternate" href="https://valcriss.github.io/Instantiate/docs/configuration/environment-variables" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Environment Variables","item":"https://valcriss.github.io/Instantiate/docs/configuration/environment-variables"}]}</script><link rel="stylesheet" href="/Instantiate/assets/css/styles.827c52cd.css">
-<script src="/Instantiate/assets/js/runtime~main.2df79024.js" defer="defer"></script>
+<script src="/Instantiate/assets/js/runtime~main.606ca628.js" defer="defer"></script>
 <script src="/Instantiate/assets/js/main.ef2ff2e9.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -21,6 +21,7 @@ can be defined in a <code>.env</code> file or directly in your deployment files.
 <li><code>HOST_SCHEME</code> - scheme for service URLs (<code>http</code> or <code>https</code>). Defaults to <code>http</code>.</li>
 <li><code>PORT_MIN</code> - lowest port number available for exposed services. Defaults to <code>10000</code>.</li>
 <li><code>PORT_MAX</code> - highest port number available for exposed services. Defaults to <code>11000</code>.</li>
+<li><code>EXCLUDED_PORTS</code> - comma-separated list of ports that will never be allocated even if free.</li>
 <li><code>REPOSITORY_GITLAB_USERNAME</code> and <code>REPOSITORY_GITLAB_TOKEN</code> - credentials for GitLab access and comments.</li>
 <li><code>REPOSITORY_GITHUB_USERNAME</code> and <code>REPOSITORY_GITHUB_TOKEN</code> - credentials for GitHub access and comments.</li>
 <li><code>DATABASE_URL</code> - PostgreSQL connection string used by the application.</li>
