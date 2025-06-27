@@ -25,4 +25,4 @@ services:
 - `commands` – list of shell commands executed sequentially with `sh -c`.
 - `mountpath` – optional path where the repository is mounted inside the container. Defaults to `/app`.
 
-If the service defines a `repository` section, Instantiate clones that repository and mounts it when running the commands. Otherwise the main project directory is mounted. When using Docker you must also mount `/tmp` on the host so these cloned repositories are accessible.
+If the service defines a `repository` section, Instantiate clones that repository and mounts it when running the commands. Otherwise the main project directory is mounted. When using Docker you must also mount the directory defined by `WORKING_PATH` (default `/tmp`) on the host so these cloned repositories are accessible.

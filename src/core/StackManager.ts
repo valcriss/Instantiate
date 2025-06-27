@@ -1,6 +1,5 @@
 import path from 'path'
 import fs from 'fs/promises'
-import os from 'os'
 import simpleGit, { SimpleGit } from 'simple-git'
 import YAML from 'yaml'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
@@ -16,6 +15,7 @@ import { StackService } from './StackService'
 import { createDirectory, removeDirectory } from '../utils/ioUtils'
 import { injectCredentialsIfMissing } from '../utils/gitUrl'
 import execa from '../docker/execaWrapper'
+import { getWorkingPath } from '../utils/workingPath'
 
 /**
  * Coordinates the creation and removal of ephemeral stacks for merge requests.
@@ -46,7 +46,7 @@ export class StackManager {
   async deploy(payload: MergeRequestPayload, projectKey: string) {
     const projectId = payload.project_id
     const mrId = payload.mr_id
-    const tmpPath = path.join(os.tmpdir(), 'instantiate', projectId.toString(), mrId.toString())
+    const tmpPath = path.join(getWorkingPath(), 'instantiate', projectId.toString(), mrId.toString())
     let cloneUrl = `${payload.repo}`
     if (payload.provider === 'gitlab') {
       cloneUrl = injectCredentialsIfMissing(cloneUrl, process.env.REPOSITORY_GITLAB_USERNAME, process.env.REPOSITORY_GITLAB_TOKEN)
@@ -121,7 +121,7 @@ export class StackManager {
   async destroy(payload: MergeRequestPayload, projectKey: string) {
     const projectId = payload.project_id
     const mrId = payload.mr_id
-    const tmpPath = path.join(os.tmpdir(), 'instantiate', projectId.toString(), mrId.toString())
+    const tmpPath = path.join(getWorkingPath(), 'instantiate', projectId.toString(), mrId.toString())
     const commenter = CommentService.getCommenter(payload.provider)
 
     try {
