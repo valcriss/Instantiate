@@ -10,11 +10,13 @@ describe('PortAllocator', () => {
 
   const originalPortMin = process.env.PORT_MIN
   const originalPortMax = process.env.PORT_MAX
+  const originalExcluded = process.env.EXCLUDED_PORTS
 
   beforeEach(() => {
     jest.clearAllMocks()
     delete process.env.PORT_MIN
     delete process.env.PORT_MAX
+    delete process.env.EXCLUDED_PORTS
   })
 
   afterEach(() => {
@@ -22,6 +24,8 @@ describe('PortAllocator', () => {
     else delete process.env.PORT_MIN
     if (originalPortMax !== undefined) process.env.PORT_MAX = originalPortMax
     else delete process.env.PORT_MAX
+    if (originalExcluded !== undefined) process.env.EXCLUDED_PORTS = originalExcluded
+    else delete process.env.EXCLUDED_PORTS
   })
 
   afterAll(async () => {
@@ -91,5 +95,16 @@ describe('PortAllocator', () => {
 
     expect(port).toBe(20002)
     expect(mockDb.addExposedPorts).toHaveBeenCalledWith('valcriss', 'mr-env', 'svc', 'SVC_PORT', 0, 20002)
+  })
+
+  it('exclut les ports listés dans EXCLUDED_PORTS', async () => {
+    process.env.EXCLUDED_PORTS = '10002,10003'
+    mockDb.allreadyAllocatedPort.mockResolvedValueOnce(null)
+    mockDb.getUsedPorts.mockResolvedValueOnce(new Set([10000, 10001]))
+
+    const port = await PortAllocator.allocatePort('valcriss', 'mr-ex', 'svc', 'SVC_PORT')
+
+    expect(port).toBe(10004)
+    expect(mockDb.addExposedPorts).toHaveBeenCalledWith('valcriss', 'mr-ex', 'svc', 'SVC_PORT', 0, 10004)
   })
 })
