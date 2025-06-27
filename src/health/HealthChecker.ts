@@ -5,6 +5,7 @@ import { StackInfo, StackService, StackStatus } from '../core/StackService'
 import logger from '../utils/logger'
 import { getOrchestratorAdapter } from '../orchestrators'
 import { buildStackName } from '../utils/nameUtils'
+import { getWorkingPath } from '../utils/workingPath'
 
 export class HealthChecker {
   static async checkStack(stack: StackInfo): Promise<StackStatus> {
@@ -13,7 +14,7 @@ export class HealthChecker {
       let orchestrator = 'compose'
       try {
         const raw = await fs.readFile(
-          path.join(path.join(require('os').tmpdir(), 'instantiate', stack.projectId, stack.mr_id), '.instantiate', 'config.yml'),
+          path.join(path.join(getWorkingPath(), 'instantiate', stack.projectId, stack.mr_id), '.instantiate', 'config.yml'),
           'utf-8'
         )
         const config = YAML.parse(raw)

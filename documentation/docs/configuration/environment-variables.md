@@ -22,3 +22,4 @@ can be defined in a `.env` file or directly in your deployment files. The
 - `IGNORE_SSL_ERRORS` - set to `true` to disable SSL verification when cloning repositories or contacting GitLab.
 - `NODE_ENV` - set to `development` for local testing. It alters clone URLs so containers can reach the host machine.
 - `PORT` - HTTP port for the web server. Defaults to `3000`.
+- `WORKING_PATH` - base directory where repositories are cloned. Defaults to `/tmp`.

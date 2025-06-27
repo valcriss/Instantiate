@@ -799,6 +799,41 @@ describe('StackManager environment variables', () => {
 
     expect(hostDns).toContain('https://custom-domain')
   })
+
+  it('uses WORKING_PATH for temporary directory', async () => {
+    process.env.WORKING_PATH = '/fic/instantiate'
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+
+    const stackManager = new StackManager()
+    const projectKeyLocal = 'test-project'
+    const localPayload: MergeRequestPayload = {
+      project_id: 'valcriss',
+      projectName: '',
+      mergeRequestName: '',
+      mr_id: 'mr-42',
+      mr_iid: 'mr-42',
+      status: 'open',
+      branch: 'feature/test',
+      repo: 'valcriss/test-repo',
+      sha: 'abcdef123456',
+      author: 'valcriss',
+      full_name: 'valcriss/test-repo',
+      provider: 'github'
+    }
+    const fakeGit = createFakeGit()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockFs.readFile.mockResolvedValue('yaml')
+    mockYaml.parse.mockReturnValue({})
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(localPayload, projectKeyLocal)
+
+    expect(fakeGit.clone).toHaveBeenCalledWith(localPayload.repo, expect.stringContaining('/fic/instantiate'), ['--branch', localPayload.branch])
+  })
 })
 
 describe('StackManager additional branches', () => {

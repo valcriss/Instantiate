@@ -32,12 +32,12 @@ Instantiate is distributed as a Docker Compose stack. Clone the repository or do
       - MQTT_BROKER_URL=mqtt://broker:1883
 ```
 
-When running the services via Docker you must also mount the `/tmp` directory so prebuild commands can access cloned repositories:
+When running the services via Docker you must also mount the directory specified by `WORKING_PATH` (default `/tmp`) so prebuild commands can access cloned repositories:
 
 ```yaml
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /tmp:/tmp
+      - ${WORKING_PATH:-/tmp}:${WORKING_PATH:-/tmp}
 ```
 
 Start the services with:
