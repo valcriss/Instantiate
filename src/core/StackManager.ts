@@ -95,13 +95,14 @@ export class StackManager {
       }
 
       await this.launchStack(tmpPath, configData.composeInput, configData.orchestrator, context, ports, portsLinks, payload, commenter)
-
       return hostDns
     } catch (err) {
       logger.error(`[stack] Error during the deployment of the stack for MR #${mrId} on project ${projectId}`)
       await commenter.postStatusComment(payload, 'error')
       await StackService.updateStatus(projectId, mrId, 'error')
       throw err
+    } finally {
+      await removeDirectory(tmpPath)
     }
   }
 
@@ -202,6 +203,7 @@ export class StackManager {
         if (serviceCfg.repository) {
           const repoCfg = serviceCfg.repository
           const repoPath = path.join(tmpPath, serviceName)
+          await removeDirectory(repoPath)
           let sideRepoUrl = repoCfg.repo
           if (payload.provider === 'gitlab') {
             sideRepoUrl = injectCredentialsIfMissing(sideRepoUrl, process.env.REPOSITORY_GITLAB_USERNAME, process.env.REPOSITORY_GITLAB_TOKEN)
