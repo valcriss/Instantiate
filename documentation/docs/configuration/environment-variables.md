@@ -14,6 +14,7 @@ can be defined in a `.env` file or directly in your deployment files. The
 - `HOST_SCHEME` - scheme for service URLs (`http` or `https`). Defaults to `http`.
 - `PORT_MIN` - lowest port number available for exposed services. Defaults to `10000`.
 - `PORT_MAX` - highest port number available for exposed services. Defaults to `11000`.
+- `EXCLUDED_PORTS` - comma-separated list of ports that will never be allocated even if free.
 - `REPOSITORY_GITLAB_USERNAME` and `REPOSITORY_GITLAB_TOKEN` - credentials for GitLab access and comments.
 - `REPOSITORY_GITHUB_USERNAME` and `REPOSITORY_GITHUB_TOKEN` - credentials for GitHub access and comments.
 - `DATABASE_URL` - PostgreSQL connection string used by the application.
