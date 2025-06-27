@@ -318,6 +318,7 @@ describe('StackManager.deploy', () => {
     const fakeGit = createFakeGit({ listRemote: jest.fn() })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
+    const rmSpy = jest.spyOn(ioUtils, 'removeDirectory').mockResolvedValue(true)
 
     mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({
@@ -334,6 +335,7 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [])
+    expect(rmSpy).toHaveBeenCalledWith(expect.stringContaining('/backend'))
   })
 
   it('clones side repo for gitlab provider with injected credentials', async () => {
@@ -661,6 +663,42 @@ describe('StackManager.deploy', () => {
     expect(result).toBeUndefined()
     expect(fakeGit.clone).not.toHaveBeenCalled()
     loggerSpy.mockRestore()
+  })
+
+  it("nettoie le dossier temporaire en cas d'erreur lors du d\u00e9ploiement", async () => {
+    const stackManager = new StackManager()
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = createFakeGit()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+    const rmSpy = jest.spyOn(ioUtils, 'removeDirectory').mockResolvedValue(true)
+    mockFs.readFile.mockResolvedValue('yaml')
+    mockYaml.parse.mockReturnValue({})
+    mockTemplateEngine.renderToFile.mockRejectedValue(new Error('fail'))
+    mockFs.stat.mockResolvedValue({} as Stats)
+
+    await expect(stackManager.deploy(payload, projectKey)).rejects.toThrow('fail')
+
+    expect(rmSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('nettoie le dossier temporaire apres un déploiement réussi', async () => {
+    const stackManager = new StackManager()
+    delete process.env.REPOSITORY_GITHUB_TOKEN
+    const fakeGit = createFakeGit()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mockGit.mockReturnValue(fakeGit as any)
+    const rmSpy = jest.spyOn(ioUtils, 'removeDirectory').mockResolvedValue(true)
+    mockFs.readFile.mockResolvedValue('yaml')
+    mockYaml.parse.mockReturnValue({})
+    mockTemplateEngine.renderToFile.mockResolvedValue()
+    mockDocker.prototype.up.mockResolvedValue()
+    mockFs.stat.mockResolvedValue({} as Stats)
+    mockDb.getUsedPorts.mockResolvedValue(new Set())
+
+    await stackManager.deploy(payload, projectKey)
+
+    expect(rmSpy).toHaveBeenCalledTimes(2)
   })
 })
 
