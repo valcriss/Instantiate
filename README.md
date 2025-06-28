@@ -16,6 +16,12 @@ npm run worker:mqtt    # start the MQTT worker
 npm run test           # run the test suite
 ```
 
+## Integrating AI into the Developer Workflow
+
+As part of the development of Instantiate, I actively use AI tools such as OpenAI's Codex to assist with coding, debugging, and design decisions. In my view, it's no longer reasonable to deny the role that artificial intelligence plays in modern software development. Just as version control or continuous integration became essential tools of the trade, AI is now becoming a natural extension of a developer’s toolkit.
+
+Rather than resisting this shift, I believe it's far more productive, and necessary, to learn how to harness these tools effectively. By understanding their strengths and limitations, we can use AI not only to accelerate development but also to deepen our own knowledge, challenge our assumptions, and explore new possibilities. For me, integrating AI into my workflow is not about replacing human effort but about enhancing it. It’s a new skill set that, when mastered, can lead to better results, faster iterations, and more thoughtful software design.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
