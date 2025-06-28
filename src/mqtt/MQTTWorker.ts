@@ -12,6 +12,10 @@ let client: MqttClient
 export function initializeMQTTWorker(brokerUrl: string = process.env.MQTT_BROKER_URL ?? 'mqtt://localhost:1883') {
   client = mqtt.connect(brokerUrl)
 
+  client.on('error', (err) => {
+    logger.error('[mqtt-worker] Error:', err)
+  })
+
   client.on('connect', () => {
     logger.info('[mqtt-worker] MQTT worker started')
     client.subscribe('instantiate/update')

@@ -78,6 +78,13 @@ describe('MQTTWorker', () => {
     expect(mockClient.subscribe).toHaveBeenCalledWith('instantiate/update')
   })
 
+  it('logs errors when an error occurs', () => {
+    const errorCallback = mockClient.on.mock.calls.find((c: unknown[]) => c[0] === 'error')[1]
+    const err = new Error('mqtt error')
+    errorCallback(err)
+    expect(logger.error).toHaveBeenCalledWith('[mqtt-worker] Error:', err)
+  })
+
   it('initializes when ensureMQTTWorkerIsInitialized is called', () => {
     jest.resetModules()
     const mqttMock = require('mqtt') as { connect: jest.Mock }
