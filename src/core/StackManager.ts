@@ -12,7 +12,7 @@ import { buildStackName } from '../utils/nameUtils'
 import { PortAllocator } from './PortAllocator'
 import { CommentService } from '../comments/CommentService'
 import { StackService } from './StackService'
-import { createDirectory, removeDirectory } from '../utils/ioUtils'
+import { createDirectory, removeDirectory, directoryExists } from '../utils/ioUtils'
 import { injectCredentialsIfMissing } from '../utils/gitUrl'
 import execa from '../docker/execaWrapper'
 import { getWorkingPath } from '../utils/workingPath'
@@ -127,14 +127,52 @@ export class StackManager {
 
     try {
       logger.info(`[stack] Removing of the stack for MR #${mrId}`)
+
       let orchestrator = 'compose'
-      try {
-        const raw = await fs.readFile(path.join(tmpPath, '.instantiate', 'config.yml'), 'utf-8')
-        const conf = YAML.parse(raw)
-        orchestrator = conf.orchestrator ?? 'compose'
-      } catch {
-        // ignore if missing
+      if (!(await directoryExists(tmpPath))) {
+        if (!(await this.prepareTmpDir(tmpPath))) {
+          throw new Error('Unable to recreate working directory')
+        }
+        let cloneUrl = `${payload.repo}`
+        if (payload.provider === 'gitlab') {
+          cloneUrl = injectCredentialsIfMissing(cloneUrl, process.env.REPOSITORY_GITLAB_USERNAME, process.env.REPOSITORY_GITLAB_TOKEN)
+        }
+        if (payload.provider === 'github') {
+          cloneUrl = injectCredentialsIfMissing(cloneUrl, process.env.REPOSITORY_GITHUB_USERNAME, process.env.REPOSITORY_GITHUB_TOKEN)
+        }
+        const git = simpleGit({ config: process.env.IGNORE_SSL_ERRORS === 'true' ? ['http.sslVerify=false'] : [] })
+        await git.clone(cloneUrl, tmpPath, ['--branch', payload.branch])
+
+        const configData = await this.loadConfiguration(tmpPath, payload.branch)
+        if (configData) {
+          orchestrator = configData.orchestrator
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const repoPaths = await this.cloneRepositories(git, payload, tmpPath, (configData.config as any).services)
+          const ports = await PortAllocator.getPortsForMr(projectId, mrId)
+          const hostDomain = process.env.HOST_DOMAIN ?? 'localhost'
+          const hostScheme = process.env.HOST_SCHEME ?? 'http'
+          const hostDns = `${hostScheme}://${hostDomain}`
+          const context = {
+            MR_ID: mrId,
+            PROJECT_KEY: projectKey,
+            HOST_DNS: hostDns,
+            HOST_DOMAIN: hostDomain,
+            HOST_SCHEME: hostScheme,
+            ...repoPaths,
+            ...ports
+          }
+          await this.renderComposeFile(tmpPath, configData.composeInput, context)
+        }
+      } else {
+        try {
+          const raw = await fs.readFile(path.join(tmpPath, '.instantiate', 'config.yml'), 'utf-8')
+          const conf = YAML.parse(raw)
+          orchestrator = conf.orchestrator ?? 'compose'
+        } catch {
+          // ignore if missing
+        }
       }
+
       const adapter = getOrchestratorAdapter(orchestrator)
       const stackName = buildStackName(payload.projectName, payload.mergeRequestName)
       await adapter.down(tmpPath, stackName)
@@ -145,12 +183,12 @@ export class StackManager {
       logger.info(`[stack] Stack for MR #${mrId} on project ${projectId} successfully removed`)
 
       await StackService.remove(projectId, mrId)
-
-      await fs.rm(tmpPath, { recursive: true, force: true })
       await commenter.postStatusComment(payload, 'closed')
     } catch (err) {
       logger.error(`[stack] Error during the removal of the stack for MR #${mrId} on project ${projectId}`)
       throw err
+    } finally {
+      await fs.rm(tmpPath, { recursive: true, force: true })
     }
   }
 
@@ -291,6 +329,12 @@ export class StackManager {
     return { ports, portsLinks }
   }
 
+  private async renderComposeFile(tmpPath: string, composeInput: string, context: Record<string, unknown>): Promise<void> {
+    const composeOutput = path.join(tmpPath, 'docker-compose.yml')
+    await TemplateEngine.renderToFile(composeInput, composeOutput, context)
+    await validateStackFile(composeOutput)
+  }
+
   private async launchStack(
     tmpPath: string,
     composeInput: string,
@@ -302,10 +346,7 @@ export class StackManager {
     commenter: ReturnType<typeof CommentService.getCommenter>
   ): Promise<void> {
     const adapter = getOrchestratorAdapter(orchestrator)
-    const composeOutput = path.join(tmpPath, 'docker-compose.yml')
-
-    await TemplateEngine.renderToFile(composeInput, composeOutput, context)
-    await validateStackFile(composeOutput)
+    await this.renderComposeFile(tmpPath, composeInput, context)
 
     const stackName = buildStackName(payload.projectName, payload.mergeRequestName)
 
