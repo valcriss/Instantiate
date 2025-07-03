@@ -6,15 +6,25 @@ import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { closeLogger } from '../../src/utils/logger'
 import { closeConnection } from '../../src/mqtt/MQTTClient'
 import { StackService } from '../../src/core/StackService'
+import simpleGit from 'simple-git'
 
 jest.mock('../../src/orchestrators/DockerComposeAdapter')
 jest.mock('../../src/db')
 jest.mock('../../src/core/PortAllocator')
+jest.mock('simple-git')
+jest.mock('../../src/core/StackService')
 
 const mockDocker = DockerComposeAdapter as unknown as jest.MockedClass<typeof DockerComposeAdapter>
 const mockDb = db as jest.Mocked<typeof db>
 const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
 const mockStackService = StackService as jest.Mocked<typeof StackService>
+const mockGit = simpleGit as jest.MockedFunction<typeof simpleGit>
+
+function createFakeGit() {
+  return {
+    clone: jest.fn().mockResolvedValue(undefined)
+  }
+}
 
 describe('StackManager.destroy', () => {
   const stackManager = new StackManager()
@@ -38,6 +48,7 @@ describe('StackManager.destroy', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockGit.mockReturnValue(createFakeGit() as any)
   })
 
   afterAll(async () => {
@@ -105,5 +116,66 @@ describe('StackManager.destroy', () => {
     expect(mockDocker.prototype.down).toHaveBeenCalled()
     expect(mockPorts.releasePorts).not.toHaveBeenCalled()
     expect(mockDb.updateMergeRequest).not.toHaveBeenCalled()
+  })
+
+  it('injecte les identifiants lorsque le provider est gitlab', async () => {
+    process.env.REPOSITORY_GITLAB_USERNAME = 'gluser'
+    process.env.REPOSITORY_GITLAB_TOKEN = 'glsecret'
+    const gitlabPayload: MergeRequestPayload = {
+      ...payload,
+      provider: 'gitlab',
+      repo: 'https://gitlab.com/test/repo.git'
+    }
+    const fakeGit = createFakeGit()
+    mockGit.mockReturnValue(fakeGit as any)
+    mockDocker.prototype.down.mockResolvedValue()
+    mockPorts.releasePorts.mockResolvedValue()
+    mockDb.updateMergeRequest.mockResolvedValue()
+    mockStackService.remove.mockResolvedValue()
+    jest.spyOn(stackManager as any, 'loadConfiguration').mockResolvedValueOnce({
+      orchestrator: 'compose',
+      composeInput: '/tmp/i',
+      config: {}
+    })
+    mockPorts.getPortsForMr.mockResolvedValueOnce({})
+    jest.spyOn(stackManager as any, 'cloneRepositories').mockResolvedValueOnce({})
+    jest.spyOn(stackManager as any, 'renderComposeFile').mockResolvedValueOnce(Promise.resolve())
+
+    await stackManager.destroy(gitlabPayload, projectKey)
+
+    expect(fakeGit.clone).toHaveBeenCalledWith(
+      'https://gluser:glsecret@gitlab.com/test/repo.git',
+      expect.any(String),
+      ['--branch', gitlabPayload.branch]
+    )
+
+    delete process.env.REPOSITORY_GITLAB_USERNAME
+    delete process.env.REPOSITORY_GITLAB_TOKEN
+  })
+
+  it("utilise simpleGit avec l'option sslVerify=false quand IGNORE_SSL_ERRORS est a true", async () => {
+    process.env.IGNORE_SSL_ERRORS = 'true'
+    const fakeGit = createFakeGit()
+    mockGit.mockReturnValue(fakeGit as any)
+    mockDocker.prototype.down.mockResolvedValue()
+    mockPorts.releasePorts.mockResolvedValue()
+    mockDb.updateMergeRequest.mockResolvedValue()
+    mockStackService.remove.mockResolvedValue()
+    jest.spyOn(stackManager as any, 'loadConfiguration').mockResolvedValueOnce(null)
+
+    await stackManager.destroy(payload as MergeRequestPayload, projectKey)
+
+    expect(mockGit).toHaveBeenCalledWith({ config: ['http.sslVerify=false'] })
+    process.env.IGNORE_SSL_ERRORS = ''
+  })
+
+  it('lance une erreur si le dossier de travail est impossible à créer', async () => {
+    const spy = jest.spyOn(stackManager as any, 'prepareTmpDir').mockResolvedValueOnce(false)
+
+    await expect(stackManager.destroy(payload as MergeRequestPayload, projectKey)).rejects.toThrow(
+      'Unable to recreate working directory'
+    )
+
+    spy.mockRestore()
   })
 })
