@@ -9,7 +9,7 @@ import { closeConnection } from '../../src/mqtt/MQTTClient'
 import { StackService } from '../../src/core/StackService'
 import * as orchestrators from '../../src/orchestrators'
 import { OrchestratorAdapter } from '../../src/orchestrators/OrchestratorAdapter'
-import simpleGit from 'simple-git'
+import simpleGit, { SimpleGit } from 'simple-git'
 
 jest.mock('fs/promises')
 jest.mock('yaml')
@@ -27,10 +27,10 @@ const mockStackService = StackService as jest.Mocked<typeof StackService>
 const mockGetAdapter = orchestrators.getOrchestratorAdapter as jest.MockedFunction<typeof orchestrators.getOrchestratorAdapter>
 const mockGit = simpleGit as jest.MockedFunction<typeof simpleGit>
 
-function createFakeGit() {
+function createFakeGit(): SimpleGit {
   return {
     clone: jest.fn().mockResolvedValue(undefined)
-  }
+  } as unknown as SimpleGit
 }
 
 describe('StackManager.destroy config handling', () => {
@@ -53,7 +53,7 @@ describe('StackManager.destroy config handling', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockGit.mockReturnValue(createFakeGit() as any)
+    mockGit.mockReturnValue(createFakeGit())
     mockFs.stat.mockRejectedValue(new Error('missing'))
   })
 

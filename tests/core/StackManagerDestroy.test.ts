@@ -6,7 +6,7 @@ import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { closeLogger } from '../../src/utils/logger'
 import { closeConnection } from '../../src/mqtt/MQTTClient'
 import { StackService } from '../../src/core/StackService'
-import simpleGit from 'simple-git'
+import simpleGit, { SimpleGit } from 'simple-git'
 
 jest.mock('../../src/orchestrators/DockerComposeAdapter')
 jest.mock('../../src/db')
@@ -20,10 +20,10 @@ const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
 const mockStackService = StackService as jest.Mocked<typeof StackService>
 const mockGit = simpleGit as jest.MockedFunction<typeof simpleGit>
 
-function createFakeGit() {
+function createFakeGit(): SimpleGit {
   return {
     clone: jest.fn().mockResolvedValue(undefined)
-  }
+  } as unknown as SimpleGit
 }
 
 describe('StackManager.destroy', () => {
@@ -48,7 +48,7 @@ describe('StackManager.destroy', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockGit.mockReturnValue(createFakeGit() as any)
+    mockGit.mockReturnValue(createFakeGit())
   })
 
   afterAll(async () => {
@@ -127,27 +127,44 @@ describe('StackManager.destroy', () => {
       repo: 'https://gitlab.com/test/repo.git'
     }
     const fakeGit = createFakeGit()
-    mockGit.mockReturnValue(fakeGit as any)
+    mockGit.mockReturnValue(fakeGit)
     mockDocker.prototype.down.mockResolvedValue()
     mockPorts.releasePorts.mockResolvedValue()
     mockDb.updateMergeRequest.mockResolvedValue()
     mockStackService.remove.mockResolvedValue()
-    jest.spyOn(stackManager as any, 'loadConfiguration').mockResolvedValueOnce({
-      orchestrator: 'compose',
-      composeInput: '/tmp/i',
-      config: {}
-    })
+    jest
+      .spyOn(
+        stackManager as unknown as {
+          loadConfiguration: (...args: unknown[]) => Promise<unknown>
+        },
+        'loadConfiguration'
+      )
+      .mockResolvedValueOnce({
+        orchestrator: 'compose',
+        composeInput: '/tmp/i',
+        config: {}
+      })
     mockPorts.getPortsForMr.mockResolvedValueOnce({})
-    jest.spyOn(stackManager as any, 'cloneRepositories').mockResolvedValueOnce({})
-    jest.spyOn(stackManager as any, 'renderComposeFile').mockResolvedValueOnce(Promise.resolve())
+    jest
+      .spyOn(
+        stackManager as unknown as {
+          cloneRepositories: (...args: unknown[]) => Promise<unknown>
+        },
+        'cloneRepositories'
+      )
+      .mockResolvedValueOnce({})
+    jest
+      .spyOn(
+        stackManager as unknown as {
+          renderComposeFile: (...args: unknown[]) => Promise<void>
+        },
+        'renderComposeFile'
+      )
+      .mockResolvedValueOnce(Promise.resolve())
 
     await stackManager.destroy(gitlabPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith(
-      'https://gluser:glsecret@gitlab.com/test/repo.git',
-      expect.any(String),
-      ['--branch', gitlabPayload.branch]
-    )
+    expect(fakeGit.clone).toHaveBeenCalledWith('https://gluser:glsecret@gitlab.com/test/repo.git', expect.any(String), ['--branch', gitlabPayload.branch])
 
     delete process.env.REPOSITORY_GITLAB_USERNAME
     delete process.env.REPOSITORY_GITLAB_TOKEN
@@ -156,12 +173,19 @@ describe('StackManager.destroy', () => {
   it("utilise simpleGit avec l'option sslVerify=false quand IGNORE_SSL_ERRORS est a true", async () => {
     process.env.IGNORE_SSL_ERRORS = 'true'
     const fakeGit = createFakeGit()
-    mockGit.mockReturnValue(fakeGit as any)
+    mockGit.mockReturnValue(fakeGit)
     mockDocker.prototype.down.mockResolvedValue()
     mockPorts.releasePorts.mockResolvedValue()
     mockDb.updateMergeRequest.mockResolvedValue()
     mockStackService.remove.mockResolvedValue()
-    jest.spyOn(stackManager as any, 'loadConfiguration').mockResolvedValueOnce(null)
+    jest
+      .spyOn(
+        stackManager as unknown as {
+          loadConfiguration: (...args: unknown[]) => Promise<unknown>
+        },
+        'loadConfiguration'
+      )
+      .mockResolvedValueOnce(null)
 
     await stackManager.destroy(payload as MergeRequestPayload, projectKey)
 
@@ -170,11 +194,16 @@ describe('StackManager.destroy', () => {
   })
 
   it('lance une erreur si le dossier de travail est impossible à créer', async () => {
-    const spy = jest.spyOn(stackManager as any, 'prepareTmpDir').mockResolvedValueOnce(false)
+    const spy = jest
+      .spyOn(
+        stackManager as unknown as {
+          prepareTmpDir: (...args: unknown[]) => Promise<boolean>
+        },
+        'prepareTmpDir'
+      )
+      .mockResolvedValueOnce(false)
 
-    await expect(stackManager.destroy(payload as MergeRequestPayload, projectKey)).rejects.toThrow(
-      'Unable to recreate working directory'
-    )
+    await expect(stackManager.destroy(payload as MergeRequestPayload, projectKey)).rejects.toThrow('Unable to recreate working directory')
 
     spy.mockRestore()
   })
