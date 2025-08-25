@@ -42,7 +42,7 @@ describe('DockerComposeAdapter', () => {
     const adapter = new DockerComposeAdapter()
     await adapter.down(path, projectName)
 
-    expect(mockedExeca).toHaveBeenCalledWith('docker-compose', ['-p', projectName, 'down', '--volumes'], expect.objectContaining({ cwd: path }))
+    expect(mockedExeca).toHaveBeenCalledWith('docker-compose', ['-p', projectName, 'down', '--volumes', '--rmi', 'all'], expect.objectContaining({ cwd: path }))
   })
 
   it("n'exécute pas docker-compose down si le dossier n'existe pas", async () => {

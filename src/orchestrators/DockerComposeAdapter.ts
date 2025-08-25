@@ -22,7 +22,7 @@ export class DockerComposeAdapter implements OrchestratorAdapter {
       return
     }
     logger.info(`[docker] Stack down: ${projectName}`)
-    const subprocess = execa('docker-compose', ['-p', projectName, 'down', '--volumes'], { cwd: stackPath })
+    const subprocess = execa('docker-compose', ['-p', projectName, 'down', '--volumes', '--rmi', 'all'], { cwd: stackPath })
     subprocess.stdout?.on('data', (d) => {
       logger.info(`[docker:stdout] ${d.toString().trim()}`)
     })
