@@ -11,6 +11,7 @@ export class DockerSwarmAdapter implements OrchestratorAdapter {
   async down(_stackPath: string, projectName: string): Promise<void> {
     logger.info(`[swarm] Stack down: ${projectName}`)
     await execa('docker', ['stack', 'rm', projectName])
+    await execa('docker', ['image', 'prune', '-f'])
   }
 
   async checkHealth(projectName: string): Promise<'running' | 'error'> {
