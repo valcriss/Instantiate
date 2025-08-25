@@ -21,12 +21,13 @@ describe('DockerSwarmAdapter', () => {
     expect(mockedExeca).toHaveBeenCalledWith('docker', ['stack', 'deploy', '-c', 'docker-compose.yml', projectName], expect.objectContaining({ cwd: path }))
   })
 
-  it('removes with docker stack rm', async () => {
+  it('removes stack and prunes images', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockedExeca.mockResolvedValueOnce({} as any)
+    mockedExeca.mockResolvedValue({} as any)
     const adapter = new DockerSwarmAdapter()
     await adapter.down(path, projectName)
-    expect(mockedExeca).toHaveBeenCalledWith('docker', ['stack', 'rm', projectName])
+    expect(mockedExeca).toHaveBeenNthCalledWith(1, 'docker', ['stack', 'rm', projectName])
+    expect(mockedExeca).toHaveBeenNthCalledWith(2, 'docker', ['image', 'prune', '-f'])
   })
 
   it('checkHealth returns running when replicas match', async () => {
