@@ -30,5 +30,7 @@ export function generateComment(status: DeploymentStatus, links?: Record<string,
       return `${COMMENT_SIGNATURE}\n Stack destroyed due to merge request closure.`
     case 'error':
       return `${COMMENT_SIGNATURE}\n Deployment failed.`
+    case 'ignored':
+      return `${COMMENT_SIGNATURE}\n branch ignored by instantiate configuration`
   }
 }

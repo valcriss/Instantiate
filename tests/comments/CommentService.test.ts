@@ -32,6 +32,11 @@ describe('generateComment', () => {
     const result = generateComment('error')
     expect(result).toBe(`${COMMENT_SIGNATURE}\n Deployment failed.`)
   })
+
+  it("génère un commentaire pour le statut 'ignored'", () => {
+    const result = generateComment('ignored')
+    expect(result).toBe(`${COMMENT_SIGNATURE}\n branch ignored by instantiate configuration`)
+  })
 })
 
 describe('CommentService', () => {
