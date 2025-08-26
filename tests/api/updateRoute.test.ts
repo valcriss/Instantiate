@@ -9,6 +9,7 @@ import { StackManager } from '../../src/core/StackManager'
 import { closeConnection } from '../../src/mqtt/MQTTClient'
 import { closeLogger } from '../../src/utils/logger'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
+import { CommentService } from '../../src/comments/CommentService'
 
 // Mocks
 jest.mock('../../src/providers/github')
@@ -128,14 +129,64 @@ describe('POST /api/update', () => {
     expect(res.body.error).toMatch(/Internal error/)
   })
 
-  it("log l'erreur lorsque enqueueUpdateEvent echoue", () => {
-    const logger = require('../../src/utils/logger').default
-    jest.spyOn(logger, 'error').mockImplementation(() => {})
-    jest.spyOn(require('../../src/mqtt/MQTTClient'), 'ensureMQTTClientIsInitialized').mockImplementation(() => {
-      throw new Error('fail')
+  it('ignore la branche et poste un commentaire si prefixe defini', async () => {
+    process.env.IGNORE_BRANCH_PREFIX = 'ignore-'
+    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue({
+      ...fakePayload,
+      branch: 'ignore-feature'
     })
 
-    enqueueUpdateEvent({ payload: fakePayload, projectKey: 'key' })
+    const updateModule = require('../../src/api/update')
+    const enqueueSpy = jest.spyOn(updateModule, 'enqueueUpdateEvent')
+    const postStatusCommentMock = jest.fn().mockResolvedValue(undefined)
+    jest.spyOn(CommentService, 'getCommenter').mockReturnValue({
+      postStatusComment: postStatusCommentMock
+    } as unknown as ReturnType<typeof CommentService.getCommenter>)
+
+    const res = await request(app).post('/api/update?key=test-key').set('x-github-event', 'pull_request').send({})
+
+    expect(res.status).toBe(200)
+    expect(enqueueSpy).not.toHaveBeenCalled()
+    expect(postStatusCommentMock).toHaveBeenCalledWith(expect.objectContaining({ branch: 'ignore-feature' }), 'ignored')
+
+    delete process.env.IGNORE_BRANCH_PREFIX
+  })
+
+  it('ignore la branche sans commenter si MR fermee', async () => {
+    process.env.IGNORE_BRANCH_PREFIX = 'ignore-'
+    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue({
+      ...fakePayload,
+      branch: 'ignore-feature',
+      status: 'closed'
+    })
+
+    const updateModule = require('../../src/api/update')
+    const enqueueSpy = jest.spyOn(updateModule, 'enqueueUpdateEvent')
+    const getCommenterSpy = jest.spyOn(CommentService, 'getCommenter')
+
+    const res = await request(app).post('/api/update?key=test-key').set('x-github-event', 'pull_request').send({})
+
+    expect(res.status).toBe(200)
+    expect(enqueueSpy).not.toHaveBeenCalled()
+    expect(getCommenterSpy).not.toHaveBeenCalled()
+
+    delete process.env.IGNORE_BRANCH_PREFIX
+  })
+
+  it("log l'erreur lorsque enqueueUpdateEvent echoue", () => {
+    jest.resetModules()
+    jest.doMock('../../src/mqtt/MQTTClient', () => ({
+      ensureMQTTClientIsInitialized: () => {
+        throw new Error('fail')
+      },
+      publishUpdateEvent: jest.fn()
+    }))
+
+    const logger = require('../../src/utils/logger').default
+    jest.spyOn(logger, 'error').mockImplementation(() => {})
+
+    const updateModule = require('../../src/api/update')
+    updateModule.enqueueUpdateEvent({ payload: fakePayload, projectKey: 'key' })
 
     expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({ err: expect.any(Error) }), '[api] Failed to enqueue update event')
   })

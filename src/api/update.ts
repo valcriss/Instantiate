@@ -4,6 +4,7 @@ import { parseGitlabWebhook } from '../providers/gitlab'
 import { parseGithubWebhook } from '../providers/github'
 import { ensureMQTTClientIsInitialized, publishUpdateEvent } from '../mqtt/MQTTClient'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
+import { CommentService } from '../comments/CommentService'
 
 const router = express.Router()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,6 +39,16 @@ router.post('/update', async (req: any, res: any) => {
 
   try {
     const payload = provider === 'gitlab' ? parseGitlabWebhook(req.body) : parseGithubWebhook(req.body)
+
+    const ignoredPrefix = process.env.IGNORE_BRANCH_PREFIX
+    if (ignoredPrefix && payload.branch.startsWith(ignoredPrefix)) {
+      logger.info(`[api] Ignoring branch ${payload.branch} due to prefix ${ignoredPrefix}`)
+      if (payload.status === 'open') {
+        const commenter = CommentService.getCommenter(payload.provider)
+        await commenter.postStatusComment(payload, 'ignored')
+      }
+      return res.status(200).json({ success: true })
+    }
 
     logger.info(`[api] Received ${payload.status} event for MR #${payload.mr_id} from ${provider}`)
 
