@@ -4,6 +4,7 @@ import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { GitHubCommenter } from '../../src/comments/GitHubCommenter'
 import { Response } from 'node-fetch'
 import db from '../../src/db'
+import * as CommentService from '../../src/comments/CommentService'
 
 jest.mock('node-fetch')
 jest.mock('../../src/utils/logger')
@@ -146,6 +147,25 @@ describe('GitHubCommenter', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('https://api.github.com/repos/valcriss/test-repo/issues/456/comments', expect.objectContaining({ method: 'POST' }))
       expect(db.setMergeRequestCommentId).toHaveBeenCalledWith('123', '456', '888')
+    })
+
+    it("poste un commentaire 'ignored' en utilisant generateComment", async () => {
+      const spy = jest.spyOn(CommentService, 'generateComment').mockReturnValue('ignored comment')
+      ;(db.getMergeRequestCommentId as jest.Mock).mockResolvedValueOnce(null)
+      mockFetch.mockResolvedValueOnce({ json: async () => ({ id: 777 }), status: 201 } as Response)
+
+      await commenter.postStatusComment(fakePayload, 'ignored')
+
+      expect(spy).toHaveBeenCalledWith('ignored', undefined)
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.github.com/repos/valcriss/test-repo/issues/456/comments',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ body: 'ignored comment' })
+        })
+      )
+      expect(db.setMergeRequestCommentId).toHaveBeenCalledWith('123', '456', '777')
+      spy.mockRestore()
     })
   })
 
