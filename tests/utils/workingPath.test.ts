@@ -10,6 +10,11 @@ describe('getWorkingPath', () => {
     expect(getWorkingPath()).toBe('/custom')
   })
 
+  it('returns the default when set to only whitespace', () => {
+    process.env.WORKING_PATH = '   '
+    expect(getWorkingPath()).toBe('/tmp')
+  })
+
   it('returns the default when not set', () => {
     expect(getWorkingPath()).toBe('/tmp')
   })
