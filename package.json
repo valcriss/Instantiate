@@ -8,7 +8,7 @@
     "postbuild": "npx ncp src/templates dist/templates",
     "start": "node dist/server.js",
     "migrate:up": "node-pg-migrate up",
-    "test": "jest --coverage --forceExit",
+    "test": "jest --coverage",
     "test:watch": "jest --watch",
     "lint": "eslint --ext .ts src migrations tests",
     "format": "eslint --ext .ts src migrations tests --fix",

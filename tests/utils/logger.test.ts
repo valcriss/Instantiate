@@ -48,6 +48,16 @@ describe('logger (utils/logger.ts)', () => {
     expect(infoSpy).toHaveBeenCalledWith('test log')
   })
 
+  it('omits transport in test environment', () => {
+    process.env.NODE_ENV = 'test'
+    const logger = require('../../src/utils/logger').default
+
+    expect(mockPino.mock.calls[0][0]).not.toHaveProperty('transport')
+
+    logger.error('boom')
+    expect(errorSpy).toHaveBeenCalledWith('boom')
+  })
+
   it('flushes and removes listeners when closeLogger is called', () => {
     process.env.NODE_ENV = 'development'
     const { closeLogger } = require('../../src/utils/logger')
@@ -61,5 +71,21 @@ describe('logger (utils/logger.ts)', () => {
     mockPino.mockReturnValue({ info: infoSpy, error: errorSpy })
     const { closeLogger } = require('../../src/utils/logger')
     expect(() => closeLogger()).not.toThrow()
+  })
+
+  it('calls transport.end when available', () => {
+    jest.resetModules()
+    const endSpy = jest.fn()
+    mockPino.mockReturnValue({
+      info: infoSpy,
+      error: errorSpy,
+      flush: flushSpy,
+      removeAllListeners: removeListenersSpy,
+      transport: { end: endSpy }
+    })
+    process.env.NODE_ENV = 'development'
+    const { closeLogger } = require('../../src/utils/logger')
+    closeLogger()
+    expect(endSpy).toHaveBeenCalled()
   })
 })
