@@ -84,7 +84,7 @@ export class GitHubCommenter extends BaseCommenter {
    * @returns A promise that resolves when the comment has been created or
    *   updated.
    */
-  async postStatusComment(payload: MergeRequestPayload, status: 'in_progress' | 'ready' | 'closed', links?: Record<string, string>) {
+  async postStatusComment(payload: MergeRequestPayload, status: 'in_progress' | 'ready' | 'closed' | 'ignored', links?: Record<string, string>) {
     const headers = this.getHeaders()
     if (!headers) {
       logger.warn('[github-comment] Github token not found, skipping comment')
