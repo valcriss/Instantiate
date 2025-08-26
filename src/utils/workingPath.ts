@@ -1,3 +1,7 @@
 export function getWorkingPath(): string {
-  return process.env.WORKING_PATH ?? '/tmp'
+  const envPath = process.env.WORKING_PATH
+  if (envPath && envPath.trim() !== '') {
+    return envPath
+  }
+  return '/tmp'
 }
