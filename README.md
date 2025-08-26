@@ -6,7 +6,7 @@ Instantiate automatically provisions disposable environments for every merge req
 
 ## Documentation
 
-Detailed guides for installation and configuration are available in the [documentation](https://valcriss.github.io/Instantiate/) site. Start with the **Introduction** and **Getting Started** sections.
+Detailed guides for installation and configuration are available in the [documentation](https://valcriss.github.io/Instantiate/) site. Start with the **Introduction** and **Getting Started** sections. Configuration options, such as the `IGNORE_BRANCH_PREFIX` environment variable to skip branches with a specific prefix, are documented there as well.
 
 ## Development
 
