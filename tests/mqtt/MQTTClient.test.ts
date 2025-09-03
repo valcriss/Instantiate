@@ -88,7 +88,7 @@ describe('MQTTClient', () => {
       mockClient.end = jest.fn((force: boolean, options: any, callback: (err?: Error) => void) => callback(error))
 
       await expect(closeConnection()).rejects.toThrow('Close connection error')
-      expect(logger.error).toHaveBeenCalledWith('[mqtt-client] Error closing connection:', error)
+      expect(logger.error).toHaveBeenCalledWith({ err: error }, '[mqtt-client] Error closing connection')
     })
   })
 
@@ -109,7 +109,7 @@ describe('MQTTClient', () => {
       const error = new Error('Test error')
       errorCallback(error)
 
-      expect(logger.info).toHaveBeenCalledWith('[mqtt-client] Error:', error.message)
+      expect(logger.info).toHaveBeenCalledWith({ err: error.message }, '[mqtt-client] Error')
     })
   })
 })

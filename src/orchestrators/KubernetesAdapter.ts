@@ -22,7 +22,7 @@ export class KubernetesAdapter implements OrchestratorAdapter {
       const phases = stdout.trim().split(/\s+/)
       return phases.every((p) => p === 'Running') ? 'running' : 'error'
     } catch (err) {
-      logger.error('[k8s] Error checking stack', err)
+      logger.error({ err }, '[k8s] Error checking stack')
       return 'error'
     }
   }

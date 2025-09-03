@@ -23,7 +23,7 @@ export class DockerSwarmAdapter implements OrchestratorAdapter {
       const replicas = stdout.split('\n').filter(Boolean)
       return replicas.every((r) => r.split('/')[0] === r.split('/')[1]) ? 'running' : 'error'
     } catch (err) {
-      logger.error('[swarm] Error checking stack', err)
+      logger.error({ err }, '[swarm] Error checking stack')
       return 'error'
     }
   }

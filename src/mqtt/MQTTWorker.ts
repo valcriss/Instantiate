@@ -13,7 +13,7 @@ export function initializeMQTTWorker(brokerUrl: string = process.env.MQTT_BROKER
   client = mqtt.connect(brokerUrl)
 
   client.on('error', (err) => {
-    logger.error('[mqtt-worker] Error:', err)
+    logger.error({ err }, '[mqtt-worker] Error')
   })
 
   client.on('connect', () => {
@@ -32,7 +32,7 @@ export function initializeMQTTWorker(brokerUrl: string = process.env.MQTT_BROKER
         await stackManager.destroy(payload, projectKey)
       }
     } catch (err) {
-      logger.error('[mqtt-worker] Error processing message:', err)
+      logger.error({ err }, '[mqtt-worker] Error processing message')
       logger.error(err)
     }
   })

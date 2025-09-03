@@ -18,8 +18,8 @@ export function initializeMQTTClient(brokerUrl: string = process.env.MQTT_BROKER
   })
 
   client.on('error', (err) => {
-    logger.info('[mqtt-client] Error:', err.message)
-    logger.error('[mqtt-client] Error:', err)
+    logger.info({ err: err.message }, '[mqtt-client] Error')
+    logger.error({ err }, '[mqtt-client] Error')
   })
 
   return client
@@ -39,7 +39,7 @@ export async function closeConnection() {
   return new Promise((resolve, reject) => {
     client?.end(false, {}, (err) => {
       if (err) {
-        logger.error('[mqtt-client] Error closing connection:', err)
+        logger.error({ err }, '[mqtt-client] Error closing connection')
         return reject(err)
       }
       client = null
