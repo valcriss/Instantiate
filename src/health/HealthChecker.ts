@@ -26,7 +26,7 @@ export class HealthChecker {
       const status = await adapter.checkHealth(projectName)
       return status
     } catch (err) {
-      logger.error('[health] Error checking stack', err)
+      logger.error({ err }, '[health] Error checking stack')
       return 'error'
     }
   }
@@ -45,7 +45,7 @@ export class HealthChecker {
 export function startHealthChecker(intervalMs = 30000) {
   setInterval(() => {
     HealthChecker.checkAllStacks().catch((err) => {
-      logger.error('[health] Error during health check loop', err)
+      logger.error({ err }, '[health] Error during health check loop')
     })
   }, intervalMs)
 }

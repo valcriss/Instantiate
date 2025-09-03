@@ -41,7 +41,7 @@ export class DockerComposeAdapter implements OrchestratorAdapter {
       const states = stdout.split('\n').filter(Boolean)
       return states.every((s) => s === 'running') ? 'running' : 'error'
     } catch (err) {
-      logger.error('[docker] Error checking stack', err)
+      logger.error({ err }, '[docker] Error checking stack')
       return 'error'
     }
   }
