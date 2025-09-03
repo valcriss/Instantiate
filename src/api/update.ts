@@ -9,10 +9,13 @@ import { CommentService } from '../comments/CommentService'
 const router = express.Router()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 router.post('/update', async (req: any, res: any) => {
-  logger.debug('[api] Incoming webhook', {
-    query: req.query,
-    headers: req.headers
-  })
+  logger.debug(
+    {
+      query: req.query,
+      headers: req.headers
+    },
+    '[api] Incoming webhook'
+  )
 
   const projectKey = req.query.key as string
   const headers = req.headers
@@ -30,7 +33,7 @@ router.post('/update', async (req: any, res: any) => {
     provider = 'github'
   }
 
-  logger.debug('[api] Determined provider', provider)
+  logger.debug({ provider }, '[api] Determined provider')
 
   if (!provider) {
     logger.warn('[api] Unsupported source control provider')

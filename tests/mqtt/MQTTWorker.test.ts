@@ -60,7 +60,7 @@ describe('MQTTWorker', () => {
     mockDeploy.mockRejectedValueOnce(err)
     const payload = { status: 'open' }
     await messageCallback('instantiate/update', Buffer.from(JSON.stringify({ payload, projectKey: 'key' })))
-    expect(logger.error).toHaveBeenCalledWith('[mqtt-worker] Error processing message:', err)
+    expect(logger.error).toHaveBeenCalledWith({ err }, '[mqtt-worker] Error processing message')
     expect(logger.error).toHaveBeenCalledWith(err)
   })
 
@@ -82,7 +82,7 @@ describe('MQTTWorker', () => {
     const errorCallback = mockClient.on.mock.calls.find((c: unknown[]) => c[0] === 'error')[1]
     const err = new Error('mqtt error')
     errorCallback(err)
-    expect(logger.error).toHaveBeenCalledWith('[mqtt-worker] Error:', err)
+    expect(logger.error).toHaveBeenCalledWith({ err }, '[mqtt-worker] Error')
   })
 
   it('initializes when ensureMQTTWorkerIsInitialized is called', () => {
