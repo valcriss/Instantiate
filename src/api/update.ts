@@ -5,6 +5,7 @@ import { parseGithubWebhook } from '../providers/github'
 import { ensureMQTTClientIsInitialized, publishUpdateEvent } from '../mqtt/MQTTClient'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import { CommentService } from '../comments/CommentService'
+import db from '../db'
 
 const router = express.Router()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,6 +47,7 @@ router.post('/update', async (req: any, res: any) => {
     const ignoredPrefix = process.env.IGNORE_BRANCH_PREFIX
     if (ignoredPrefix && payload.branch.startsWith(ignoredPrefix)) {
       logger.info(`[api] Ignoring branch ${payload.branch} due to prefix ${ignoredPrefix}`)
+      await db.updateMergeRequest(payload, 'ignored')
       if (payload.status === 'open') {
         const commenter = CommentService.getCommenter(payload.provider)
         await commenter.postStatusComment(payload, 'ignored')

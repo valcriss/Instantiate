@@ -10,11 +10,13 @@ import { closeConnection } from '../../src/mqtt/MQTTClient'
 import { closeLogger } from '../../src/utils/logger'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { CommentService } from '../../src/comments/CommentService'
+import db from '../../src/db'
 
 // Mocks
 jest.mock('../../src/providers/github')
 jest.mock('../../src/providers/gitlab')
 jest.mock('../../src/core/StackManager')
+jest.mock('../../src/db')
 
 // Implémentations factices pour la StackManager
 const mockDeploy = jest.fn()
@@ -169,6 +171,42 @@ describe('POST /api/update', () => {
     expect(res.status).toBe(200)
     expect(enqueueSpy).not.toHaveBeenCalled()
     expect(getCommenterSpy).not.toHaveBeenCalled()
+
+    delete process.env.IGNORE_BRANCH_PREFIX
+  })
+
+  it('upserts merge request and avoids duplicate comments for ignored branches', async () => {
+    process.env.IGNORE_BRANCH_PREFIX = 'ignore-'
+    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue({
+      ...fakePayload,
+      branch: 'ignore-feature'
+    })
+
+    const updateMergeRequestMock = (db.updateMergeRequest as jest.Mock).mockResolvedValue(undefined)
+    const getCommentIdMock = (db.getMergeRequestCommentId as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce('c123')
+    const setCommentIdMock = (db.setMergeRequestCommentId as jest.Mock).mockResolvedValue(undefined)
+
+    const postStatusCommentMock = jest.fn(async (payload: MergeRequestPayload) => {
+      const existing = await getCommentIdMock(payload.project_id, payload.mr_id)
+      if (!existing) {
+        await setCommentIdMock(payload.project_id, payload.mr_id, 'c123')
+      }
+    })
+
+    jest.spyOn(CommentService, 'getCommenter').mockReturnValue({
+      postStatusComment: postStatusCommentMock
+    } as unknown as ReturnType<typeof CommentService.getCommenter>)
+
+    const res1 = await request(app).post('/api/update?key=test-key').set('x-github-event', 'pull_request').send({})
+    expect(res1.status).toBe(200)
+
+    const res2 = await request(app).post('/api/update?key=test-key').set('x-github-event', 'pull_request').send({})
+    expect(res2.status).toBe(200)
+
+    expect(updateMergeRequestMock).toHaveBeenCalledWith(expect.objectContaining({ branch: 'ignore-feature' }), 'ignored')
+    expect(updateMergeRequestMock).toHaveBeenCalledTimes(2)
+    expect(setCommentIdMock).toHaveBeenCalledTimes(1)
+    expect(postStatusCommentMock).toHaveBeenCalledTimes(2)
 
     delete process.env.IGNORE_BRANCH_PREFIX
   })
