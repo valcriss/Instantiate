@@ -1,5 +1,6 @@
 import db from '../db'
 import logger from '../utils/logger'
+import { getDockerExposedPorts, isPortFree } from '../utils/portUtils'
 
 const DEFAULT_PORT_MIN = 10000
 const DEFAULT_PORT_MAX = 11000
@@ -27,20 +28,42 @@ export class PortAllocator {
   }
   static async allocatePort(projectId: string, mrId: string, service: string, name: string): Promise<number> {
     const alreadyAllocatedPort = await db.allreadyAllocatedPort(projectId, mrId, service, name)
+    const dockerPorts = await getDockerExposedPorts()
+
     if (alreadyAllocatedPort) {
       logger.info(`[port] Port already allocated : ${alreadyAllocatedPort} for ${service} ${name} (MR:${mrId})`)
-      return alreadyAllocatedPort
+      const isAvailable = await isPortFree(alreadyAllocatedPort, dockerPorts)
+      if (isAvailable) {
+        return alreadyAllocatedPort
+      }
+      logger.warn(`[port] Previously allocated port ${alreadyAllocatedPort} is busy for ${service} ${name} (MR:${mrId}), searching for another one`)
     }
+
     const usedPorts = await db.getUsedPorts()
     const excludedPorts = PortAllocator.excludedPorts
     const min = PortAllocator.portMin
     const max = PortAllocator.portMax
+
+    if (alreadyAllocatedPort) {
+      usedPorts.delete(alreadyAllocatedPort)
+    }
     for (let port = min; port <= max; port++) {
-      if (!usedPorts.has(port) && !excludedPorts.has(port)) {
-        await db.addExposedPorts(projectId, mrId, service, name, 0, port)
-        logger.info(`[port] Port allocated : ${port} for ${service} ${name} (MR:${mrId})`)
-        return port
+      if (usedPorts.has(port) || excludedPorts.has(port)) {
+        continue
       }
+
+      if (!(await isPortFree(port, dockerPorts))) {
+        continue
+      }
+
+      if (alreadyAllocatedPort) {
+        await db.updateExposedPort(projectId, mrId, service, name, port)
+      } else {
+        await db.addExposedPorts(projectId, mrId, service, name, 0, port)
+      }
+
+      logger.info(`[port] Port allocated : ${port} for ${service} ${name} (MR:${mrId})`)
+      return port
     }
 
     throw new Error('There is no available port')
