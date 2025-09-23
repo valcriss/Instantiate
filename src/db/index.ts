@@ -32,6 +32,18 @@ export default {
       [projectId, mrId, service, name, internalPort, port]
     )
   },
+  updateExposedPort: async (projectId: string, mrId: string, service: string, name: string, port: number) => {
+    await pool.query(`UPDATE exposed_ports SET external_port = $5 WHERE project_id = $1 AND mr_id = $2 AND service = $3 AND name = $4`, [
+      projectId,
+      mrId,
+      service,
+      name,
+      port
+    ])
+  },
+  removeExposedPort: async (projectId: string, mrId: string, service: string, name: string) => {
+    await pool.query(`DELETE FROM exposed_ports WHERE project_id = $1 AND mr_id = $2 AND service = $3 AND name = $4`, [projectId, mrId, service, name])
+  },
   releasePorts: async (projectId: string, mrId: string) => {
     await pool.query(`DELETE FROM exposed_ports WHERE project_id = $1 AND mr_id = $2`, [projectId, mrId])
   },

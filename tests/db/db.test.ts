@@ -128,6 +128,32 @@ describe('db/index.ts', () => {
     expect(mockPoolInstance.query).toHaveBeenCalled()
   })
 
+  it('updateExposedPort met à jour le port exposé existant', async () => {
+    const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
+    mockPoolInstance.query.mockClear()
+
+    await db.updateExposedPort('123', '456', 'test-service', 'test-name', 4242)
+
+    expect(mockPoolInstance.query).toHaveBeenCalledWith(
+      `UPDATE exposed_ports SET external_port = $5 WHERE project_id = $1 AND mr_id = $2 AND service = $3 AND name = $4`,
+      ['123', '456', 'test-service', 'test-name', 4242]
+    )
+  })
+
+  it('removeExposedPort supprime une entrée de port exposé', async () => {
+    const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
+    mockPoolInstance.query.mockClear()
+
+    await db.removeExposedPort('123', '456', 'test-service', 'test-name')
+
+    expect(mockPoolInstance.query).toHaveBeenCalledWith(`DELETE FROM exposed_ports WHERE project_id = $1 AND mr_id = $2 AND service = $3 AND name = $4`, [
+      '123',
+      '456',
+      'test-service',
+      'test-name'
+    ])
+  })
+
   it('releasePorts supprime les ports exposés pour un projet et une MR donnés', async () => {
     const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
 
