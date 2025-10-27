@@ -17,6 +17,11 @@ jest.mock('../../src/providers/github')
 jest.mock('../../src/providers/gitlab')
 jest.mock('../../src/core/StackManager')
 jest.mock('../../src/db')
+jest.mock('../../src/mqtt/MQTTClient', () => ({
+  ensureMQTTClientIsInitialized: jest.fn(),
+  publishUpdateEvent: jest.fn(),
+  closeConnection: jest.fn()
+}))
 
 // Implémentations factices pour la StackManager
 const mockDeploy = jest.fn()
@@ -72,7 +77,11 @@ describe('POST /api/update', () => {
   }
 
   it('traite un webhook GitHub pour MR ouverte', async () => {
-    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue(fakePayload)
+    ;(github.parseGithubWebhook as jest.Mock).mockResolvedValue({
+      kind: 'handled',
+      payload: fakePayload,
+      forceDeploy: false
+    })
     ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(null)
 
     // On utilise directement `request(app)` au lieu de `request(server)`
@@ -81,10 +90,26 @@ describe('POST /api/update', () => {
     expect(res.status).toBe(200)
   })
 
+  it('renvoie skipped lorsque le parseur ignore le webhook', async () => {
+    ;(github.parseGithubWebhook as jest.Mock).mockResolvedValue({
+      kind: 'skipped',
+      reason: 'comment_not_command'
+    })
+
+    const res = await request(app).post('/api/update?key=test-key').set('x-github-event', 'issue_comment').send({})
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ success: true, skipped: true, reason: 'comment_not_command' })
+  })
+
   it('traite un webhook GitLab pour MR fermée', async () => {
-    ;(gitlab.parseGitlabWebhook as jest.Mock).mockReturnValue({
-      ...fakePayload,
-      status: 'closed'
+    ;(gitlab.parseGitlabWebhook as jest.Mock).mockResolvedValue({
+      kind: 'handled',
+      payload: {
+        ...fakePayload,
+        status: 'closed'
+      },
+      forceDeploy: false
     })
     ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(fakePayload.sha)
 
@@ -119,9 +144,13 @@ describe('POST /api/update', () => {
   })
 
   it("retourne 500 si l'enqueue échoue", async () => {
-    ;(gitlab.parseGitlabWebhook as jest.Mock).mockReturnValue({
-      ...fakePayload,
-      status: 'closed'
+    ;(gitlab.parseGitlabWebhook as jest.Mock).mockResolvedValue({
+      kind: 'handled',
+      payload: {
+        ...fakePayload,
+        status: 'closed'
+      },
+      forceDeploy: false
     })
     // On simule une exception dans publishUpdateEvent
     jest.spyOn(require('../../src/mqtt/MQTTClient'), 'publishUpdateEvent').mockImplementation(() => {
@@ -136,9 +165,13 @@ describe('POST /api/update', () => {
 
   it('ignore la branche et poste un commentaire si prefixe defini', async () => {
     process.env.IGNORE_BRANCH_PREFIX = 'ignore-'
-    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue({
-      ...fakePayload,
-      branch: 'ignore-feature'
+    ;(github.parseGithubWebhook as jest.Mock).mockResolvedValue({
+      kind: 'handled',
+      payload: {
+        ...fakePayload,
+        branch: 'ignore-feature'
+      },
+      forceDeploy: false
     })
     ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(null)
 
@@ -160,10 +193,14 @@ describe('POST /api/update', () => {
 
   it('ignore la branche sans commenter si MR fermee', async () => {
     process.env.IGNORE_BRANCH_PREFIX = 'ignore-'
-    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue({
-      ...fakePayload,
-      branch: 'ignore-feature',
-      status: 'closed'
+    ;(github.parseGithubWebhook as jest.Mock).mockResolvedValue({
+      kind: 'handled',
+      payload: {
+        ...fakePayload,
+        branch: 'ignore-feature',
+        status: 'closed'
+      },
+      forceDeploy: false
     })
     ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(null)
 
@@ -182,9 +219,13 @@ describe('POST /api/update', () => {
 
   it('upserts merge request and avoids duplicate comments for ignored branches', async () => {
     process.env.IGNORE_BRANCH_PREFIX = 'ignore-'
-    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue({
-      ...fakePayload,
-      branch: 'ignore-feature'
+    ;(github.parseGithubWebhook as jest.Mock).mockResolvedValue({
+      kind: 'handled',
+      payload: {
+        ...fakePayload,
+        branch: 'ignore-feature'
+      },
+      forceDeploy: false
     })
     ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(null)
 
@@ -218,7 +259,11 @@ describe('POST /api/update', () => {
   })
 
   it('ignore le deploiement quand le sha est identique pour une MR ouverte', async () => {
-    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue(fakePayload)
+    ;(github.parseGithubWebhook as jest.Mock).mockResolvedValue({
+      kind: 'handled',
+      payload: fakePayload,
+      forceDeploy: false
+    })
     ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(fakePayload.sha)
 
     const updateModule = require('../../src/api/update')
@@ -230,6 +275,23 @@ describe('POST /api/update', () => {
     expect(res.body).toEqual({ success: true, skipped: true, reason: 'no_code_changes' })
     expect(enqueueSpy).not.toHaveBeenCalled()
     expect(db.updateMergeRequest).toHaveBeenCalledWith(expect.objectContaining({ sha: fakePayload.sha }), 'open')
+  })
+
+  it('force le déploiement même si le sha est identique', async () => {
+    ;(github.parseGithubWebhook as jest.Mock).mockResolvedValue({
+      kind: 'handled',
+      payload: fakePayload,
+      forceDeploy: true
+    })
+    ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(fakePayload.sha)
+
+    const res = await request(app).post('/api/update?key=test-key').set('x-github-event', 'issue_comment').send({})
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ success: true })
+    expect(db.updateMergeRequest).toHaveBeenCalledWith(expect.objectContaining({ mr_id: fakePayload.mr_id }), 'open')
+    const mqttClient = require('../../src/mqtt/MQTTClient')
+    expect(mqttClient.publishUpdateEvent).toHaveBeenCalledWith({ payload: fakePayload, projectKey: 'test-key' })
   })
 
   it("log l'erreur lorsque enqueueUpdateEvent echoue", () => {

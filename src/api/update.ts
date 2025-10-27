@@ -6,6 +6,7 @@ import { ensureMQTTClientIsInitialized, publishUpdateEvent } from '../mqtt/MQTTC
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import { CommentService } from '../comments/CommentService'
 import db from '../db'
+import { ParsedWebhook } from '../types/ParsedWebhook'
 
 const router = express.Router()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -28,10 +29,14 @@ router.post('/update', async (req: any, res: any) => {
 
   let provider: 'gitlab' | 'github' | null = null
 
+  let eventName: string | undefined
+
   if ('x-gitlab-event' in headers) {
     provider = 'gitlab'
+    eventName = headers['x-gitlab-event'] as string | undefined
   } else if ('x-github-event' in headers) {
     provider = 'github'
+    eventName = headers['x-github-event'] as string | undefined
   }
 
   logger.debug({ provider }, '[api] Determined provider')
@@ -42,7 +47,19 @@ router.post('/update', async (req: any, res: any) => {
   }
 
   try {
-    const payload = provider === 'gitlab' ? parseGitlabWebhook(req.body) : parseGithubWebhook(req.body)
+    let parseResult: ParsedWebhook
+    if (provider === 'gitlab') {
+      parseResult = await parseGitlabWebhook(req.body, eventName)
+    } else {
+      parseResult = await parseGithubWebhook(req.body, eventName)
+    }
+
+    if (parseResult.kind === 'skipped') {
+      logger.info(`[api] Skipping webhook processing: ${parseResult.reason}`)
+      return res.status(200).json({ success: true, skipped: true, reason: parseResult.reason })
+    }
+
+    const { payload, forceDeploy } = parseResult
 
     const ignoredPrefix = process.env.IGNORE_BRANCH_PREFIX
     if (ignoredPrefix && payload.branch.startsWith(ignoredPrefix)) {
@@ -58,7 +75,7 @@ router.post('/update', async (req: any, res: any) => {
     const previousSha = await db.getMergeRequestCommitSha(payload.project_id, payload.mr_id)
     await db.updateMergeRequest(payload, payload.status)
 
-    if (payload.status === 'open' && previousSha && previousSha === payload.sha) {
+    if (!forceDeploy && payload.status === 'open' && previousSha && previousSha === payload.sha) {
       logger.info(`[api] Skipping deployment for MR #${payload.mr_id} on project ${payload.project_id} because no code changes were detected`)
       return res.status(200).json({ success: true, skipped: true, reason: 'no_code_changes' })
     }
