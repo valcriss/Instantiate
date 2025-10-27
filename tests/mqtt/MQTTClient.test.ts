@@ -1,4 +1,4 @@
-import { initializeMQTTClient, publishUpdateEvent, closeConnection } from '../../src/mqtt/MQTTClient'
+import { initializeMQTTClient, publishUpdateEvent, closeConnection, ensureMQTTClientIsInitialized } from '../../src/mqtt/MQTTClient'
 import mqtt from 'mqtt'
 import logger from '../../src/utils/logger'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
@@ -26,6 +26,19 @@ describe('MQTTClient', () => {
   })
 
   describe('publishUpdateEvent', () => {
+    it('should ensure the client is initialized when not yet created', () => {
+      ;(mqtt.connect as jest.Mock).mockClear()
+      closeConnection()
+      ensureMQTTClientIsInitialized()
+      expect(mqtt.connect).toHaveBeenCalled()
+    })
+
+    it('should not reinitialize the client if already created', () => {
+      ;(mqtt.connect as jest.Mock).mockClear()
+      ensureMQTTClientIsInitialized()
+      expect(mqtt.connect).not.toHaveBeenCalled()
+    })
+
     it('should initialize the MQTT client if not already initialized', () => {
       const payload: MergeRequestPayload = {
         projectName: '',
