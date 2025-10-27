@@ -55,6 +55,14 @@ router.post('/update', async (req: any, res: any) => {
       return res.status(200).json({ success: true })
     }
 
+    const previousSha = await db.getMergeRequestCommitSha(payload.project_id, payload.mr_id)
+    await db.updateMergeRequest(payload, payload.status)
+
+    if (payload.status === 'open' && previousSha && previousSha === payload.sha) {
+      logger.info(`[api] Skipping deployment for MR #${payload.mr_id} on project ${payload.project_id} because no code changes were detected`)
+      return res.status(200).json({ success: true, skipped: true, reason: 'no_code_changes' })
+    }
+
     logger.info(`[api] Received ${payload.status} event for MR #${payload.mr_id} from ${provider}`)
 
     enqueueUpdateEvent({ payload, projectKey })
