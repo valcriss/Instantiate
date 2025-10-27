@@ -51,7 +51,32 @@ describe('db/index.ts', () => {
     await db.updateMergeRequest(payload, state)
 
     expect(mockPoolInstance.query).toHaveBeenCalledTimes(1) // Ensure only one query is made
-    expect(mockPoolInstance.query).toHaveBeenCalled()
+    expect(mockPoolInstance.query).toHaveBeenCalledWith(expect.stringContaining('last_commit_sha'), [
+      payload.project_id,
+      payload.mr_id,
+      payload.projectName,
+      payload.mergeRequestName,
+      payload.repo,
+      state,
+      payload.sha
+    ])
+  })
+
+  it('getMergeRequestCommitSha retourne le dernier sha ou null', async () => {
+    const mockPoolInstance = (Pool as unknown as jest.Mock).mock.results[0].value
+    mockPoolInstance.query.mockResolvedValueOnce({ rows: [{ last_commit_sha: 'abc123' }] })
+
+    const sha = await db.getMergeRequestCommitSha('1', '2')
+    expect(mockPoolInstance.query).toHaveBeenCalledWith('SELECT last_commit_sha FROM merge_requests WHERE project_id = $1 AND mr_id = $2', ['1', '2'])
+    expect(sha).toBe('abc123')
+
+    mockPoolInstance.query.mockResolvedValueOnce({ rows: [{ last_commit_sha: null }] })
+    const nullSha = await db.getMergeRequestCommitSha('1', '4')
+    expect(nullSha).toBeNull()
+
+    mockPoolInstance.query.mockResolvedValueOnce({ rows: [] })
+    const missingSha = await db.getMergeRequestCommitSha('1', '3')
+    expect(missingSha).toBeNull()
   })
 
   it('allreadyAllocatedPort retourne le port déjà alloué si disponible', async () => {

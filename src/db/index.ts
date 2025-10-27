@@ -68,13 +68,37 @@ export default {
   updateMergeRequest: async (payload: MergeRequestPayload, state: string) => {
     await pool.query(
       `
-      INSERT INTO merge_requests (project_id, mr_id, project_name, merge_request_name, repo, status, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      INSERT INTO merge_requests (
+        project_id,
+        mr_id,
+        project_name,
+        merge_request_name,
+        repo,
+        status,
+        last_commit_sha,
+        created_at,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
       ON CONFLICT (project_id, mr_id) DO UPDATE
-      SET status = $6, updated_at = NOW()
+      SET
+        project_name = EXCLUDED.project_name,
+        merge_request_name = EXCLUDED.merge_request_name,
+        repo = EXCLUDED.repo,
+        status = EXCLUDED.status,
+        last_commit_sha = EXCLUDED.last_commit_sha,
+        updated_at = NOW()
       `,
-      [payload.project_id, payload.mr_id, payload.projectName, payload.mergeRequestName, payload.repo, payload.status]
+      [payload.project_id, payload.mr_id, payload.projectName, payload.mergeRequestName, payload.repo, state, payload.sha]
     )
+  },
+  getMergeRequestCommitSha: async (projectId: string, mrId: string) => {
+    const result = await pool.query('SELECT last_commit_sha FROM merge_requests WHERE project_id = $1 AND mr_id = $2', [projectId, mrId])
+    if (result.rows.length === 0) {
+      return null
+    }
+    const value = result.rows[0].last_commit_sha as string | null
+    return value ?? null
   },
   saveStack: async (
     projectId: string,

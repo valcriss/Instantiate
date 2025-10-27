@@ -52,6 +52,7 @@ describe('POST /api/update', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     jest.resetAllMocks()
+    ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValue(null)
   })
 
   // Exemple de payload
@@ -72,6 +73,7 @@ describe('POST /api/update', () => {
 
   it('traite un webhook GitHub pour MR ouverte', async () => {
     ;(github.parseGithubWebhook as jest.Mock).mockReturnValue(fakePayload)
+    ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(null)
 
     // On utilise directement `request(app)` au lieu de `request(server)`
     const res = await request(app).post('/api/update?key=test-key').set('x-github-event', 'pull_request').send({ some: 'payload' })
@@ -84,6 +86,7 @@ describe('POST /api/update', () => {
       ...fakePayload,
       status: 'closed'
     })
+    ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(fakePayload.sha)
 
     const res = await request(app).post('/api/update?key=gl-key').set('x-gitlab-event', 'Merge Request Hook').send({ some: 'payload' })
 
@@ -137,6 +140,7 @@ describe('POST /api/update', () => {
       ...fakePayload,
       branch: 'ignore-feature'
     })
+    ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(null)
 
     const updateModule = require('../../src/api/update')
     const enqueueSpy = jest.spyOn(updateModule, 'enqueueUpdateEvent')
@@ -161,6 +165,7 @@ describe('POST /api/update', () => {
       branch: 'ignore-feature',
       status: 'closed'
     })
+    ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(null)
 
     const updateModule = require('../../src/api/update')
     const enqueueSpy = jest.spyOn(updateModule, 'enqueueUpdateEvent')
@@ -181,6 +186,7 @@ describe('POST /api/update', () => {
       ...fakePayload,
       branch: 'ignore-feature'
     })
+    ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(null)
 
     const updateMergeRequestMock = (db.updateMergeRequest as jest.Mock).mockResolvedValue(undefined)
     const getCommentIdMock = (db.getMergeRequestCommentId as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce('c123')
@@ -209,6 +215,21 @@ describe('POST /api/update', () => {
     expect(postStatusCommentMock).toHaveBeenCalledTimes(2)
 
     delete process.env.IGNORE_BRANCH_PREFIX
+  })
+
+  it('ignore le deploiement quand le sha est identique pour une MR ouverte', async () => {
+    ;(github.parseGithubWebhook as jest.Mock).mockReturnValue(fakePayload)
+    ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(fakePayload.sha)
+
+    const updateModule = require('../../src/api/update')
+    const enqueueSpy = jest.spyOn(updateModule, 'enqueueUpdateEvent')
+
+    const res = await request(app).post('/api/update?key=test-key').set('x-github-event', 'pull_request').send({})
+
+    expect(res.status).toBe(200)
+    expect(res.body).toEqual({ success: true, skipped: true, reason: 'no_code_changes' })
+    expect(enqueueSpy).not.toHaveBeenCalled()
+    expect(db.updateMergeRequest).toHaveBeenCalledWith(expect.objectContaining({ sha: fakePayload.sha }), 'open')
   })
 
   it("log l'erreur lorsque enqueueUpdateEvent echoue", () => {
