@@ -1,8 +1,21 @@
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/tests'],
   moduleFileExtensions: ['ts', 'js', 'json'],
+  transform: {
+    '^.+\\.ts$': ['@swc/jest', {
+      sourceMaps: 'inline',
+      module: {
+        type: 'commonjs'
+      },
+      jsc: {
+        target: 'es2022',
+        parser: {
+          syntax: 'typescript'
+        }
+      }
+    }]
+  },
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
   coverageDirectory: 'coverage',

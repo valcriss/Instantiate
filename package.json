@@ -10,8 +10,8 @@
     "migrate:up": "node-pg-migrate up",
     "test": "jest --coverage --forceExit",
     "test:watch": "jest --watch",
-    "lint": "eslint --ext .ts src migrations tests",
-    "format": "eslint --ext .ts src migrations tests --fix",
+    "lint": "node scripts/run-eslint.cjs --ext .ts src migrations tests",
+    "format": "node scripts/run-eslint.cjs --ext .ts src migrations tests --fix",
     "coverage:publish": "gh-pages -d coverage/lcov-report -b gh-pages -r https://x-access-token:${GITHUB_TOKEN}@github.com/valcriss/Instantiate.git",
     "worker:mqtt": "pm2 start ecosystem.config.js",
     "relay": "ngrok http 3000"
@@ -22,6 +22,9 @@
   "type": "commonjs",
   "description": "",
   "devDependencies": {
+    "@typescript/typescript6": "^6.0.2",
+    "@swc/core": "^1.15.46",
+    "@swc/jest": "^0.2.39",
     "@types/express": "^5.0.1",
     "@types/jest": "^30.0.0",
     "@types/mock-fs": "^4.13.4",
@@ -44,7 +47,6 @@
     "pino-pretty": "^13.0.0",
     "prettier": "^3.5.3",
     "supertest": "^7.1.0",
-    "ts-jest": "^29.3.1",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^7.0.2"
