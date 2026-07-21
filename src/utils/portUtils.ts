@@ -1,6 +1,6 @@
-import execa from '../docker/execaWrapper'
-import net from 'net'
-import logger from './logger'
+import { execa } from '../docker/execaWrapper'
+import * as net from 'net'
+import { logger } from './logger'
 
 const DOCKER_PS_ARGS = ['ps', '--format', '{{.Ports}}']
 
@@ -96,5 +96,3 @@ export const isPortFree = async (port: number, dockerPorts?: Set<number>): Promi
 
   return await isHostPortFree(port)
 }
-
-export default isPortFree

@@ -150,22 +150,19 @@ describe('GitHubCommenter', () => {
     })
 
     it("poste un commentaire 'ignored' en utilisant generateComment", async () => {
-      const spy = jest.spyOn(CommentService, 'generateComment').mockReturnValue('ignored comment')
       ;(db.getMergeRequestCommentId as jest.Mock).mockResolvedValueOnce(null)
       mockFetch.mockResolvedValueOnce({ json: async () => ({ id: 777 }), status: 201 } as Response)
 
       await commenter.postStatusComment(fakePayload, 'ignored')
 
-      expect(spy).toHaveBeenCalledWith('ignored', undefined)
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.github.com/repos/valcriss/test-repo/issues/456/comments',
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ body: 'ignored comment' })
+          body: JSON.stringify({ body: CommentService.generateComment('ignored') })
         })
       )
       expect(db.setMergeRequestCommentId).toHaveBeenCalledWith('123', '456', '777')
-      spy.mockRestore()
     })
   })
 

@@ -23,6 +23,14 @@ jest.mock('../../src/orchestrators/DockerComposeAdapter')
 jest.mock('../../src/orchestrators/KubernetesAdapter')
 jest.mock('../../src/db')
 jest.mock('../../src/core/PortAllocator')
+jest.mock('../../src/utils/ioUtils', () => {
+  const actual = jest.requireActual('../../src/utils/ioUtils')
+  return {
+    ...actual,
+    createDirectory: jest.fn(actual.createDirectory),
+    removeDirectory: jest.fn(actual.removeDirectory)
+  }
+})
 jest.mock('execa')
 
 const mockGit = simpleGit as jest.MockedFunction<typeof simpleGit>
@@ -34,6 +42,11 @@ const mockK8s = KubernetesAdapter as unknown as jest.MockedClass<typeof Kubernet
 const mockDb = db as jest.Mocked<typeof db>
 const mockPorts = PortAllocator as jest.Mocked<typeof PortAllocator>
 const mockedExeca = execa as jest.MockedFunction<typeof execa>
+const mockCreateDirectory = ioUtils.createDirectory as jest.MockedFunction<typeof ioUtils.createDirectory>
+const mockRemoveDirectory = ioUtils.removeDirectory as jest.MockedFunction<typeof ioUtils.removeDirectory>
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const pathContaining = (fragment: string) => expect.stringMatching(new RegExp(escapeRegExp(fragment).replaceAll('/', '[\\\\/]')))
 
 function createFakeGit(options?: { listRemote?: jest.Mock; cloneError?: Error }) {
   return {
@@ -229,11 +242,11 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(payload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', pathContaining('/backend'), ['--branch', 'develop'])
     expect(mockTemplateEngine.renderToFile).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(String),
-      expect.objectContaining({ BACKEND_PATH: expect.stringContaining('/backend') })
+      expect.objectContaining({ BACKEND_PATH: pathContaining('/backend') })
     )
   })
 
@@ -258,7 +271,7 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', payload.branch])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', pathContaining('/backend'), ['--branch', payload.branch])
   })
 
   it('falls back to defined branch when match branch is missing', async () => {
@@ -282,7 +295,7 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), ['--branch', 'develop'])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', pathContaining('/backend'), ['--branch', 'develop'])
   })
 
   it('injects credentials when provider is gitlab', async () => {
@@ -318,7 +331,7 @@ describe('StackManager.deploy', () => {
     const fakeGit = createFakeGit({ listRemote: jest.fn() })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
-    const rmSpy = jest.spyOn(ioUtils, 'removeDirectory').mockResolvedValue(true)
+    mockRemoveDirectory.mockResolvedValue(true)
 
     mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({
@@ -334,8 +347,8 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(payload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [])
-    expect(rmSpy).toHaveBeenCalledWith(expect.stringContaining('/backend'))
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', pathContaining('/backend'), [])
+    expect(mockRemoveDirectory).toHaveBeenCalledWith(pathContaining('/backend'))
   })
 
   it('clones side repo for gitlab provider with injected credentials', async () => {
@@ -365,7 +378,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(gitlabPayload, projectKey)
 
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@gitlab.com:org/backend.git', expect.stringContaining('/backend'), [])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@gitlab.com:org/backend.git', pathContaining('/backend'), [])
 
     delete process.env.REPOSITORY_GITLAB_USERNAME
     delete process.env.REPOSITORY_GITLAB_TOKEN
@@ -459,18 +472,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(payload, projectKey)
 
-    expect(mockedExeca).toHaveBeenCalledWith('docker', [
-      'run',
-      '--rm',
-      '-v',
-      expect.stringContaining('/backend:/src'),
-      '-w',
-      '/src',
-      'node:23',
-      'sh',
-      '-c',
-      'npm i'
-    ])
+    expect(mockedExeca).toHaveBeenCalledWith('docker', ['run', '--rm', '-v', pathContaining('/backend:/src'), '-w', '/src', 'node:23', 'sh', '-c', 'npm i'])
   })
 
   it('handles listRemote errors gracefully', async () => {
@@ -495,7 +497,7 @@ describe('StackManager.deploy', () => {
     await stackManager.deploy(payload, projectKey)
 
     expect(fakeGit.listRemote).toHaveBeenCalled()
-    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', expect.stringContaining('/backend'), [])
+    expect(fakeGit.clone).toHaveBeenNthCalledWith(2, 'git@github.com:org/backend.git', pathContaining('/backend'), [])
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Side repo listRemote failed'))
     logSpy.mockRestore()
   })
@@ -652,8 +654,8 @@ describe('StackManager.deploy', () => {
     const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
-    jest.spyOn(ioUtils, 'createDirectory').mockResolvedValueOnce(false)
-    jest.spyOn(ioUtils, 'removeDirectory').mockResolvedValueOnce(true)
+    mockCreateDirectory.mockResolvedValueOnce(false)
+    mockRemoveDirectory.mockResolvedValueOnce(true)
     mockFs.stat.mockResolvedValue({} as Stats)
     const loggerSpy = jest.spyOn(logger, 'error').mockImplementation(() => {})
 
@@ -671,7 +673,7 @@ describe('StackManager.deploy', () => {
     const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
-    const rmSpy = jest.spyOn(ioUtils, 'removeDirectory').mockResolvedValue(true)
+    mockRemoveDirectory.mockResolvedValue(true)
     mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({})
     mockTemplateEngine.renderToFile.mockRejectedValue(new Error('fail'))
@@ -679,7 +681,7 @@ describe('StackManager.deploy', () => {
 
     await expect(stackManager.deploy(payload, projectKey)).rejects.toThrow('fail')
 
-    expect(rmSpy).toHaveBeenCalledTimes(2)
+    expect(mockRemoveDirectory).toHaveBeenCalledTimes(2)
   })
 
   it('nettoie le dossier temporaire apres un déploiement réussi', async () => {
@@ -688,7 +690,7 @@ describe('StackManager.deploy', () => {
     const fakeGit = createFakeGit()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockGit.mockReturnValue(fakeGit as any)
-    const rmSpy = jest.spyOn(ioUtils, 'removeDirectory').mockResolvedValue(true)
+    mockRemoveDirectory.mockResolvedValue(true)
     mockFs.readFile.mockResolvedValue('yaml')
     mockYaml.parse.mockReturnValue({})
     mockTemplateEngine.renderToFile.mockResolvedValue()
@@ -698,7 +700,7 @@ describe('StackManager.deploy', () => {
 
     await stackManager.deploy(payload, projectKey)
 
-    expect(rmSpy).toHaveBeenCalledTimes(2)
+    expect(mockRemoveDirectory).toHaveBeenCalledTimes(2)
   })
 })
 
@@ -870,7 +872,7 @@ describe('StackManager environment variables', () => {
 
     await stackManager.deploy(localPayload, projectKeyLocal)
 
-    expect(fakeGit.clone).toHaveBeenCalledWith(localPayload.repo, expect.stringContaining('/fic/instantiate'), ['--branch', localPayload.branch])
+    expect(fakeGit.clone).toHaveBeenCalledWith(localPayload.repo, pathContaining('/fic/instantiate'), ['--branch', localPayload.branch])
   })
 })
 

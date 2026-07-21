@@ -2,11 +2,10 @@ import request from 'supertest'
 import express from 'express'
 
 import updateRoute from '../../src/api/update'
-import { enqueueUpdateEvent } from '../../src/api/update'
 import * as github from '../../src/providers/github'
 import * as gitlab from '../../src/providers/gitlab'
 import { StackManager } from '../../src/core/StackManager'
-import { closeConnection } from '../../src/mqtt/MQTTClient'
+import { closeConnection, publishUpdateEvent } from '../../src/mqtt/MQTTClient'
 import { closeLogger } from '../../src/utils/logger'
 import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { CommentService } from '../../src/comments/CommentService'
@@ -175,8 +174,6 @@ describe('POST /api/update', () => {
     })
     ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(null)
 
-    const updateModule = require('../../src/api/update')
-    const enqueueSpy = jest.spyOn(updateModule, 'enqueueUpdateEvent')
     const postStatusCommentMock = jest.fn().mockResolvedValue(undefined)
     jest.spyOn(CommentService, 'getCommenter').mockReturnValue({
       postStatusComment: postStatusCommentMock
@@ -185,7 +182,7 @@ describe('POST /api/update', () => {
     const res = await request(app).post('/api/update?key=test-key').set('x-github-event', 'pull_request').send({})
 
     expect(res.status).toBe(200)
-    expect(enqueueSpy).not.toHaveBeenCalled()
+    expect(publishUpdateEvent).not.toHaveBeenCalled()
     expect(postStatusCommentMock).toHaveBeenCalledWith(expect.objectContaining({ branch: 'ignore-feature' }), 'ignored')
 
     delete process.env.IGNORE_BRANCH_PREFIX
@@ -204,14 +201,12 @@ describe('POST /api/update', () => {
     })
     ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(null)
 
-    const updateModule = require('../../src/api/update')
-    const enqueueSpy = jest.spyOn(updateModule, 'enqueueUpdateEvent')
     const getCommenterSpy = jest.spyOn(CommentService, 'getCommenter')
 
     const res = await request(app).post('/api/update?key=test-key').set('x-github-event', 'pull_request').send({})
 
     expect(res.status).toBe(200)
-    expect(enqueueSpy).not.toHaveBeenCalled()
+    expect(publishUpdateEvent).not.toHaveBeenCalled()
     expect(getCommenterSpy).not.toHaveBeenCalled()
 
     delete process.env.IGNORE_BRANCH_PREFIX
@@ -266,14 +261,11 @@ describe('POST /api/update', () => {
     })
     ;(db.getMergeRequestCommitSha as jest.Mock).mockResolvedValueOnce(fakePayload.sha)
 
-    const updateModule = require('../../src/api/update')
-    const enqueueSpy = jest.spyOn(updateModule, 'enqueueUpdateEvent')
-
     const res = await request(app).post('/api/update?key=test-key').set('x-github-event', 'pull_request').send({})
 
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ success: true, skipped: true, reason: 'no_code_changes' })
-    expect(enqueueSpy).not.toHaveBeenCalled()
+    expect(publishUpdateEvent).not.toHaveBeenCalled()
     expect(db.updateMergeRequest).toHaveBeenCalledWith(expect.objectContaining({ sha: fakePayload.sha }), 'open')
   })
 

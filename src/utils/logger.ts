@@ -12,6 +12,7 @@ const logger = pino({
   }
 })
 
+export { logger }
 export const closeLogger = () => {
   if (logger.flush) {
     logger.flush()

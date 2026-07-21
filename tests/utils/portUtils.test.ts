@@ -6,6 +6,26 @@ jest.mock('../../src/docker/execaWrapper')
 
 const mockExeca = execa as jest.Mock
 
+async function getFreePort(): Promise<number> {
+  const server = net.createServer()
+
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject)
+    server.listen({ port: 0, host: '0.0.0.0' }, resolve)
+  })
+
+  const { port } = server.address() as AddressInfo
+
+  await new Promise<void>((resolve, reject) => {
+    server.close((err) => {
+      if (err) reject(err)
+      else resolve()
+    })
+  })
+
+  return port
+}
+
 describe('portUtils', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -44,25 +64,21 @@ describe('portUtils', () => {
   })
 
   it("interroge l'hôte quand le port n'est pas dans la liste Docker", async () => {
-    const hostSpy = jest.spyOn(portUtils, 'isHostPortFree').mockResolvedValueOnce(true)
+    const port = await getFreePort()
 
-    const free = await portUtils.isPortFree(12345, new Set())
+    const free = await portUtils.isPortFree(port, new Set())
 
     expect(free).toBe(true)
-    expect(hostSpy).toHaveBeenCalledWith(12345)
-    hostSpy.mockRestore()
   })
 
   it("récupère les ports Docker quand aucun ensemble n'est fourni", async () => {
     mockExeca.mockResolvedValue({ stdout: '' })
-    const hostSpy = jest.spyOn(portUtils, 'isHostPortFree').mockResolvedValueOnce(true)
+    const port = await getFreePort()
 
-    const free = await portUtils.isPortFree(23456)
+    const free = await portUtils.isPortFree(port)
 
     expect(free).toBe(true)
     expect(mockExeca).toHaveBeenCalledTimes(1)
-    expect(hostSpy).toHaveBeenCalledWith(23456)
-    hostSpy.mockRestore()
   })
 
   it("indique correctement si un port est libre sur l'hôte", async () => {
