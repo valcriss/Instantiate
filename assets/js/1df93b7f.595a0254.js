@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocumentation=self.webpackChunkdocumentation||[]).push([["452"],{5146(t,n,e){e.r(n),e.d(n,{default:()=>a});var u=e(4848),o=e(6347);function a(){return(0,u.jsx)(o.rd,{to:"/Instantiate/docs/introduction"})}}}]);
