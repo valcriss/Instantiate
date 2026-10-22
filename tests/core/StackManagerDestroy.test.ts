@@ -6,7 +6,7 @@ import { MergeRequestPayload } from '../../src/types/MergeRequestPayload'
 import { closeLogger } from '../../src/utils/logger'
 import { closeConnection } from '../../src/mqtt/MQTTClient'
 import { StackService } from '../../src/core/StackService'
-import simpleGit, { SimpleGit } from 'simple-git'
+import { simpleGit, SimpleGit } from 'simple-git'
 
 jest.mock('../../src/orchestrators/DockerComposeAdapter')
 jest.mock('../../src/db')

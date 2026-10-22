@@ -1,5 +1,5 @@
 import { StackManager } from '../../src/core/StackManager'
-import simpleGit from 'simple-git'
+import { simpleGit } from 'simple-git'
 import fs from 'fs/promises'
 import YAML from 'yaml'
 import { TemplateEngine } from '../../src/core/TemplateEngine'

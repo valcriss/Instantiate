@@ -9,7 +9,7 @@ import { closeConnection } from '../../src/mqtt/MQTTClient'
 import { StackService } from '../../src/core/StackService'
 import * as orchestrators from '../../src/orchestrators'
 import { OrchestratorAdapter } from '../../src/orchestrators/OrchestratorAdapter'
-import simpleGit, { SimpleGit } from 'simple-git'
+import { simpleGit, SimpleGit } from 'simple-git'
 
 jest.mock('fs/promises')
 jest.mock('yaml')

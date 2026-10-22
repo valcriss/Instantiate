@@ -1,6 +1,6 @@
 import path from 'path'
 import fs from 'fs/promises'
-import simpleGit, { SimpleGit } from 'simple-git'
+import { simpleGit, SimpleGit } from 'simple-git'
 import YAML from 'yaml'
 import { MergeRequestPayload } from '../types/MergeRequestPayload'
 import db from '../db'
